@@ -1,0 +1,9 @@
+# Cloudflare Pages — security headers applied to all served files.
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

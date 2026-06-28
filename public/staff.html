@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trove Staff</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/elliptic/6.5.4/elliptic.min.js"></script>
+<style>
+/* ── Base ─────────────────────────────────────────────────────── */
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surface3:#2d333b;
+  --border:#30363d;--border2:#3d444d;
+  --accent:#3fb950;--accent2:#238636;
+  --blue:#58a6ff;--red:#f85149;--amber:#e3b341;--muted:#8b949e;
+  --text:#e6edf3;--text2:#c9d1d9;
+  --r:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;font-size:14px}
+a{color:var(--blue)}
+
+/* ── Auth screens ─────────────────────────────────────────────── */
+.screen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:1.5rem}
+.screen.active{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:400px}
+.logo{display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.25rem}
+.logo-text{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--text)}
+.tagline{text-align:center;font-size:.65rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.25rem}
+.version{text-align:center;font-size:.6rem;color:var(--muted);font-family:'DM Mono',monospace;opacity:.55;margin-bottom:1.75rem}
+.card h2{font-size:1.1rem;font-weight:600;margin-bottom:.4rem;text-align:center}
+.card p{font-size:.82rem;color:var(--text2);margin-bottom:1rem;text-align:center;line-height:1.6}
+.btn{display:block;width:100%;padding:.7rem 1rem;border-radius:var(--r);border:none;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;text-align:center}
+.btn-primary{background:var(--accent2);color:#fff}
+.btn-primary:hover{background:var(--accent)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2)}
+.form-field{margin-bottom:.75rem}
+.form-field label{display:block;font-size:.78rem;color:var(--text2);margin-bottom:.35rem;font-weight:500}
+.form-field input,.form-field textarea,.form-field select{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:.83rem;padding:.5rem .75rem;outline:none;transition:border-color .15s
+}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--accent)}
+.err{color:var(--red);font-size:.78rem;margin-top:.5rem;min-height:1.2rem}
+.spinner{width:22px;height:22px;border:2.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:.75rem auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.divider{display:flex;align-items:center;gap:.6rem;margin:.75rem 0}
+.divider span{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── App shell ────────────────────────────────────────────────── */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.active{display:flex}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;position:sticky;top:0;z-index:100}
+.top-logo{display:flex;align-items:center;gap:.4rem}
+.top-logo-text{font-family:'DM Serif Display',serif;font-size:.95rem}
+.top-org{font-size:.72rem;color:var(--muted)}
+.top-actions{display:flex;align-items:center;gap:.5rem}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 1rem}
+.tab-btn{padding:.7rem 1rem;font-size:.82rem;font-weight:500;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none;flex:1;padding:1rem;max-width:680px;margin:0 auto;width:100%}
+.tab-content.active{display:block}
+
+/* ── Cards & lists ────────────────────────────────────────────── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.section-title{font-size:.85rem;font-weight:600}
+.btn-sm{display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .75rem;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:.78rem;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:500}
+.btn-sm:hover{border-color:var(--border2)}
+.btn-sm.accent{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.btn-sm.accent:hover{background:var(--accent)}
+.btn-sm.danger{border-color:rgba(248,81,73,.35);color:var(--red)}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.5rem;cursor:pointer;transition:border-color .15s}
+.item-card:hover{border-color:var(--border2)}
+.item-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}
+.item-desc{font-size:.85rem;font-weight:500;margin-bottom:.15rem}
+.item-meta{font-size:.72rem;color:var(--muted)}
+.item-amount{font-family:'DM Mono',monospace;font-size:.85rem;font-weight:500;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;padding:.15rem .45rem;border-radius:4px;font-size:.68rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.b-pending{background:rgba(227,179,65,.12);color:var(--amber)}
+.b-approved{background:rgba(63,185,80,.12);color:var(--accent)}
+.b-rejected{background:rgba(248,81,73,.12);color:var(--red)}
+.b-sent{background:rgba(88,166,255,.12);color:var(--blue)}
+.b-draft{background:rgba(139,148,158,.12);color:var(--muted)}
+.b-paid{background:rgba(63,185,80,.15);color:var(--accent);border:1px solid rgba(63,185,80,.2)}
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-ico{font-size:2rem;margin-bottom:.5rem;opacity:.3}
+
+/* ── Modal ────────────────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:1rem;font-weight:600;margin-bottom:.75rem}
+.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+.modal-err{color:var(--red);font-size:.78rem;margin-top:.4rem;min-height:1rem}
+
+/* ── Detail panel ─────────────────────────────────────────────── */
+.detail-panel{background:var(--surface2);border-top:1px solid var(--border);padding:.75rem 1rem;font-size:.82rem;display:none}
+.detail-panel.open{display:block}
+.detail-row{display:flex;justify-content:space-between;padding:.2rem 0;font-size:.78rem;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.detail-label{color:var(--muted)}
+
+/* ── Invoice lines ────────────────────────────────────────────── */
+.inv-line{display:grid;grid-template-columns:1fr 70px 90px 90px 32px;gap:.4rem;align-items:center;margin-bottom:.35rem;font-size:.78rem}
+.inv-line input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.78rem;padding:.35rem .5rem}
+.inv-total{text-align:right;font-family:'DM Mono',monospace;font-size:.85rem;font-weight:600;color:var(--accent);margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border)}
+
+/* ── Receipt upload ───────────────────────────────────────────── */
+.receipt-upload{border:1.5px dashed var(--border);border-radius:var(--r);padding:.75rem;text-align:center;cursor:pointer;transition:border-color .15s;font-size:.78rem;color:var(--muted)}
+.receipt-upload:hover{border-color:var(--accent);color:var(--accent)}
+.receipt-name{font-size:.75rem;color:var(--accent);margin-top:.3rem;font-family:'DM Mono',monospace}
+.progress-bar{height:3px;background:var(--surface3);border-radius:2px;margin-top:.4rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s}
+
+/* ── Status banner ────────────────────────────────────────────── */
+.status-banner{border-radius:var(--r);padding:.5rem .85rem;font-size:.78rem;margin-bottom:.75rem;line-height:1.5}
+.sb-rejected{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:var(--text2)}
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN 1: Join ─────────────────────────────────────────── -->
+<div id="s-join" class="screen active">
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" fill="none" width="22" height="22"><circle cx="20" cy="20" r="18" stroke="#3fb950" stroke-width="2.5" fill="none" opacity=".7"/><circle cx="20" cy="20" r="10" stroke="#3fb950" stroke-width="2" fill="none"/><circle cx="20" cy="20" r="3" fill="#3fb950"/><circle cx="20" cy="5" r="2" fill="#3fb950" opacity=".7"/><circle cx="32" cy="28" r="2" fill="#3fb950" opacity=".7"/></svg>
+      <span class="logo-text">Trove Staff</span>
+    </div>
+    <div class="tagline">Expenses & Invoices</div>
+    <div class="version">2026 May Stable Build · trove-v1</div>
+    <div id="join-screen">
+      <div style="text-align:center;font-size:2rem;margin-bottom:.75rem">👋</div>
+      <h2>Join your organisation</h2>
+      <p>Paste the invite code from your manager to get started.</p>
+      <div class="form-field">
+        <label>Invite code</label>
+        <input type="text" id="invite-code" placeholder="nmy:org_…:bafkrei…:04abc…">
+      </div>
+
+      <!-- JWT field: open if no JWT saved, collapsed if one exists -->
+      <div id="jwt-section">
+        <div id="jwt-existing" style="display:none;margin-bottom:.6rem">
+          <details>
+            <summary style="font-size:.75rem;color:var(--muted);cursor:pointer;user-select:none;list-style:none">
+              ⚙ Pinata storage — <span id="jwt-status-label">saved</span>
+              <span style="color:var(--blue);font-size:.72rem;margin-left:.3rem">change</span>
+            </summary>
+            <div style="margin-top:.4rem">
+              <div class="form-field" style="margin-bottom:.3rem">
+                <label style="font-size:.75rem">Pinata JWT <span style="color:var(--muted);font-weight:400">(leave blank to keep existing)</span></label>
+                <input type="text" id="staff-jwt" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
+                  style="font-family:'DM Mono',monospace;font-size:.72rem">
+              </div>
+              <button class="btn btn-ghost" onclick="clearStaffJWT()" style="font-size:.74rem;padding:.35rem .7rem;width:100%">
+                🗑 Clear saved JWT (required for new Pinata account)
+              </button>
+            </div>
+          </details>
+        </div>
+        <div id="jwt-missing" style="display:none;margin-bottom:.65rem">
+          <div class="form-field" style="margin-bottom:.3rem">
+            <label style="font-size:.78rem">Pinata JWT <span style="color:var(--red)">*</span>
+              <span style="color:var(--muted);font-weight:400"> — needed for file storage</span>
+            </label>
+            <input type="text" id="staff-jwt" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"
+              style="font-family:'DM Mono',monospace;font-size:.72rem">
+            <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">
+              Get a JWT from <a href="https://app.pinata.cloud/keys" target="_blank" style="color:var(--blue)">Pinata dashboard</a> → API Keys → New Key.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="processInvite()">Continue →</button>
+      <div class="divider"><span>already have an account?</span></div>
+      <button class="btn btn-ghost" onclick="showRestoreScreen()">Restore existing account →</button>
+      <div class="err" id="join-err"></div>
+    </div>
+
+    <!-- Restore account screen -->
+    <div id="restore-screen" style="display:none">
+      <div style="text-align:center;font-size:1.6rem;margin-bottom:.75rem">🔄</div>
+      <h2>Restore your account</h2>
+      <p style="margin-bottom:.75rem">Paste your registration code (shown when you first joined) to restore your account on this browser.</p>
+      <div class="form-field">
+        <label>Registration code</label>
+        <input type="text" id="restore-reg-cid" placeholder="bafkrei…"
+          style="font-family:'DM Mono',monospace;font-size:.75rem">
+        <div style="font-size:.7rem;color:var(--muted);margin-top:.2rem">
+          Find it in your old browser under 👤 Account → Registration code.
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="restoreAccount()" style="margin-bottom:.5rem">
+        🔐 Restore with passkey
+      </button>
+      <button class="btn btn-ghost" onclick="showJoinScreen()">← Back</button>
+      <div class="err" id="restore-err"></div>
+    </div>
+    <div id="register-screen" style="display:none">
+      <div style="text-align:center;font-size:1.6rem;margin-bottom:.75rem">🔐</div>
+      <h2>Create your account</h2>
+      <p>Register a passkey to securely access your expenses and invoices.</p>
+      <div class="form-field">
+        <label>Your name</label>
+        <input type="text" id="staff-name" placeholder="e.g. Ko Ko">
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;margin-bottom:.75rem;font-size:.78rem">
+        <div style="color:var(--muted);font-size:.7rem;margin-bottom:.2rem">Organisation</div>
+        <div id="reg-org-name" style="font-weight:500"></div>
+      </div>
+      <button class="btn btn-primary" onclick="registerAndJoin()">🔐 Register passkey</button>
+      <div class="err" id="reg-err"></div>
+    </div>
+
+    <div id="reg-success-screen" style="display:none">
+      <div style="text-align:center;font-size:1.6rem;margin-bottom:.5rem">✅</div>
+      <h2>You're set up, <span id="reg-success-name"></span>!</h2>
+      <p style="margin-bottom:.75rem">Share this registration code with your manager so they can link your account.</p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;margin-bottom:.5rem">
+        <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem;letter-spacing:.06em;text-transform:uppercase">Your registration code</div>
+        <div id="reg-success-cid" style="font-family:'DM Mono',monospace;font-size:.72rem;word-break:break-all;color:var(--text)"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-bottom:.5rem"
+        onclick="navigator.clipboard.writeText(document.getElementById('reg-success-cid').textContent).then(()=>toast('Copied ✓'))">
+        📋 Copy registration code
+      </button>
+      <button class="btn btn-ghost" onclick="if(window._pendingBoot)window._pendingBoot()">
+        Continue to app →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCREEN 2: Passkey login ────────────────────────────────── -->
+<div id="s-login" class="screen">
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 40 40" fill="none" width="22" height="22"><circle cx="20" cy="20" r="18" stroke="#3fb950" stroke-width="2.5" fill="none" opacity=".7"/><circle cx="20" cy="20" r="10" stroke="#3fb950" stroke-width="2" fill="none"/><circle cx="20" cy="20" r="3" fill="#3fb950"/></svg>
+      <span class="logo-text">Trove Staff</span>
+    </div>
+    <div class="tagline">Expenses & Invoices</div>
+    <div class="version">2026 May Stable Build · trove-v1</div>
+    <div style="text-align:center;font-size:1.6rem;margin-bottom:.5rem">🔐</div>
+    <h2>Welcome back</h2>
+    <p id="login-org-name" style="margin-bottom:1rem"></p>
+    <button class="btn btn-primary" id="passkey-btn" onclick="staffPasskeyLogin()">Sign in with passkey</button>
+    <div class="divider"><span>or</span></div>
+    <button class="btn btn-ghost" onclick="showJoinScreen()">Join a different organisation</button>
+    <button onclick="showJoinScreen();setTimeout(()=>{document.querySelector('#jwt-existing details')?.setAttribute('open','')},50)"
+      style="background:none;border:none;color:var(--muted);font-size:.73rem;cursor:pointer;text-decoration:underline;margin-top:.25rem;padding:.15rem">
+      ⚙ Change Pinata storage settings
+    </button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN 3: Loading ───────────────────────────────────────── -->
+<div id="s-loading" class="screen">
+  <div class="card" style="text-align:center">
+    <div class="spinner"></div>
+    <p id="loading-msg" style="color:var(--muted);font-size:.82rem">Loading…</p>
+  </div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────────────── -->
+<div id="app">
+  <div class="topbar">
+    <div class="top-logo">
+      <svg viewBox="0 0 40 40" fill="none" width="18" height="18"><circle cx="20" cy="20" r="18" stroke="#3fb950" stroke-width="2.5" fill="none" opacity=".7"/><circle cx="20" cy="20" r="10" stroke="#3fb950" stroke-width="2" fill="none"/><circle cx="20" cy="20" r="3" fill="#3fb950"/></svg>
+      <span class="top-logo-text">Trove</span>
+      <span class="top-org" id="top-org-name"></span>
+    </div>
+    <div class="top-actions">
+      <span style="font-size:.75rem;color:var(--muted)" id="top-staff-name"></span>
+      <button class="btn-sm" onclick="openAccountModal()" title="Account info &amp; registration code">👤 Account</button>
+      <button class="btn-sm" onclick="lockApp()">Lock</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('expenses')">💸 Expenses</button>
+    <button class="tab-btn" onclick="switchTab('invoices')">🧾 Invoices</button>
+  </div>
+
+  <!-- Expenses tab -->
+  <div id="tab-expenses" class="tab-content active">
+    <div class="section-header">
+      <span class="section-title">My Expenses</span>
+      <button class="btn-sm accent" onclick="openExpenseModal()">+ New expense</button>
+    </div>
+    <div id="expenses-list"></div>
+  </div>
+
+  <!-- Invoices tab -->
+  <div id="tab-invoices" class="tab-content">
+    <div class="section-header">
+      <span class="section-title">My Invoices</span>
+      <button class="btn-sm accent" onclick="openInvoiceModal()">+ New invoice</button>
+    </div>
+    <div id="invoices-list"></div>
+  </div>
+</div>
+
+<!-- ── Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal"><div id="modal-inner"></div></div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════════
+// TROVE STAFF — Expenses & Invoices
+// Passkey-only authentication. No MetaMask required.
+// Data stored in personal staff vault on IPFS (Pinata).
+// Owner reads via ECDH delegation.
+// ═══════════════════════════════════════════════════════
+
+// ── Constants ─────────────────────────────────────────────────────
+const PASSKEY_RP_ID    = location.hostname;
+const PASSKEY_WRAP_INFO= new TextEncoder().encode('trove-passkey-v1');
+const STAFF_VAULT_KEY  = 'trove_staff_vault_cid';   // localStorage: vault CID
+const STAFF_META_KEY   = 'trove_staff_meta';         // localStorage: staff identity
+const STAFF_HINTS_KEY  = 'trove_staff_pk_hints';     // localStorage: passkey hints
+const PINATA_JWT_KEY   = 'nmy_pinata_jwt';           // shared with main app
+const PINATA_PIN       = 'https://api.pinata.cloud/pinning/pinJSONToIPFS';
+const PINATA_UNPIN     = cid => `https://api.pinata.cloud/pinning/unpin/${cid}`;
+const IPFS_GATEWAYS    = ['https://cloudflare-ipfs.com/ipfs/','https://ipfs.io/ipfs/'];
+
+const EXPENSE_CATEGORIES = [
+  'Transport','Meals & Entertainment','Accommodation',
+  'Office Supplies','Training & Development','Client Entertainment',
+  'Medical','Communications','Other'
+];
+function getExpenseCategories(){
+  return window._orgCategories?.length ? window._orgCategories : EXPENSE_CATEGORIES;
+}
+
+// ── State ──────────────────────────────────────────────────────────
+let staffVault  = null;  // decrypted staff vault object
+let staffEncKey = null;  // AES-256-GCM key
+let staffMeta   = null;  // {staffId, orgId, orgName, name, ownerEcdhPubKey}
+let vaultCID    = null;  // current IPFS CID
+let pinataJWT   = null;
+
+// ── Encoding helpers ───────────────────────────────────────────────
+function hex2buf(h){const a=new Uint8Array(h.length/2);for(let i=0;i<h.length;i+=2)a[i/2]=parseInt(h.substr(i,2),16);return a.buffer}
+function buf2hex(b){return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function b642buf(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer}
+function buf2b64(b){return btoa(String.fromCharCode(...new Uint8Array(b)))}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function fmt(n){return new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0)}
+function today(){return new Date().toISOString().split('T')[0]}
+function fmtDate(s){try{return new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}catch{return s}}
+
+// ── AES-GCM encrypt/decrypt ────────────────────────────────────────
+async function encryptData(key, data){
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const ct  = await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(data)));
+  return {iv:buf2hex(iv),ct:buf2b64(ct)};
+}
+async function decryptData(key, ivHex, ctB64){
+  const buf = await crypto.subtle.decrypt({name:'AES-GCM',iv:hex2buf(ivHex)},key,b642buf(ctB64));
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
+// ── Passkey HKDF wrapping ─────────────────────────────────────────
+async function passkeyPublicKeyToWrapKey(publicKeyBytes){
+  const km = await crypto.subtle.importKey('raw',publicKeyBytes,'HKDF',false,['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'HKDF',hash:'SHA-256',salt:new TextEncoder().encode('trove-passkey-wrap-salt-v1'),info:PASSKEY_WRAP_INFO},
+    km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']
+  );
+}
+async function wrapKey(rawKeyBytes, publicKeyBytes){
+  const wk  = await passkeyPublicKeyToWrapKey(publicKeyBytes);
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const ct  = await crypto.subtle.encrypt({name:'AES-GCM',iv},wk,rawKeyBytes);
+  return {iv:buf2hex(iv),ct:buf2b64(ct)};
+}
+async function unwrapKey(wrapped, publicKeyBytes){
+  const wk  = await passkeyPublicKeyToWrapKey(publicKeyBytes);
+  return crypto.subtle.decrypt({name:'AES-GCM',iv:hex2buf(wrapped.iv)},wk,b642buf(wrapped.ct));
+}
+
+// ── ECDH (for receipt key wrapping for owner) ─────────────────────
+function getEC(){ return new elliptic.ec('secp256k1'); }
+async function sha256(bytes){
+  const b = bytes instanceof ArrayBuffer ? bytes : new TextEncoder().encode(bytes);
+  return new Uint8Array(await crypto.subtle.digest('SHA-256',b));
+}
+// ── True ECDH wrapping (S3 fix) ───────────────────────────────────
+// Generates a true ECDH shared secret from staffPriv × ownerPub.
+// Owner unwraps using ownerPriv × staffPub — shared secret is identical.
+// NOT derivable from either public key alone (unlike legacy HKDF scheme).
+function computeStaffECDHSecret(staffKeyPair, ownerPubHex){
+  const ec       = getEC();
+  const ownerPub = ec.keyFromPublic(ownerPubHex, 'hex');
+  const shared   = staffKeyPair.derive(ownerPub.getPublic()); // BN
+  // Pad to 32 bytes
+  const hex = shared.toString(16).padStart(64, '0');
+  return hex;
+}
+
+async function ecdhSharedToAES(sharedHex){
+  // HKDF over the raw shared secret → AES-256-GCM key
+  const raw = new Uint8Array(sharedHex.match(/.{2}/g).map(b=>parseInt(b,16)));
+  const km  = await crypto.subtle.importKey('raw', raw, 'HKDF', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'HKDF', hash:'SHA-256',
+     salt: new TextEncoder().encode('trove-staff-ecdh-v1'),
+     info: new TextEncoder().encode('staff-vault-key')},
+    km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+  );
+}
+
+async function ecdhWrapKey(rawKeyBytes, ownerPubHex, staffKeyPair){
+  // True ECDH: shared secret = staffPriv × ownerPub
+  const secret = computeStaffECDHSecret(staffKeyPair, ownerPubHex);
+  const aesKey = await ecdhSharedToAES(secret);
+  const iv     = crypto.getRandomValues(new Uint8Array(12));
+  const ct     = await crypto.subtle.encrypt({name:'AES-GCM',iv}, aesKey, rawKeyBytes);
+  return {iv:buf2hex(iv), ct:buf2b64(ct), scheme:'ecdh-v1'}; // tag so owner knows which scheme
+}
+
+// ── Pinata IPFS ────────────────────────────────────────────────────
+async function pinToIPFS(data, name){
+  const res = await fetch(PINATA_PIN,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+pinataJWT},
+    body:JSON.stringify({pinataContent:data,pinataMetadata:{name}})
+  });
+  if(!res.ok){const e=await res.text();throw new Error('Pinata: '+e.slice(0,120));}
+  const j = await res.json();
+  return j.IpfsHash;
+}
+async function fetchIPFS(cid){
+  for(const gw of IPFS_GATEWAYS){
+    try{
+      const res = await fetch(gw+cid,{signal:AbortSignal.timeout(8000)});
+      if(res.ok) return res.json();
+    }catch(_){}
+  }
+  throw new Error('Could not fetch from IPFS. Check your connection.');
+}
+async function unpinFromIPFS(cid){
+  try{
+    await fetch(PINATA_UNPIN(cid),{method:'DELETE',headers:{'Authorization':'Bearer '+pinataJWT}});
+  }catch(_){}
+}
+
+// ── Staff vault save/load ──────────────────────────────────────────
+async function saveStaffVault(){
+  if(!staffEncKey||!staffVault) throw new Error('Not authenticated');
+  staffVault.updatedAt = Date.now();
+  const enc  = await encryptData(staffEncKey, staffVault);
+  const oldCID = vaultCID;
+  vaultCID = await pinToIPFS(enc, `trove-staff-vault-${staffMeta.staffId}`);
+  localStorage.setItem(STAFF_VAULT_KEY+'_'+staffMeta.staffId, vaultCID);
+  if(oldCID && oldCID!==vaultCID) unpinFromIPFS(oldCID);
+  // Also update hints with latest CID
+  saveStaffHints();
+}
+
+async function loadStaffVault(cid){
+  const enc = await fetchIPFS(cid);
+  return decryptData(staffEncKey, enc.iv, enc.ct);
+}
+
+// ── Passkey hints ──────────────────────────────────────────────────
+function saveStaffHints(){
+  if(!staffMeta) return;
+  const existing = getStaffHints();
+  const thisStaff = {
+    staffId:     staffMeta.staffId,
+    orgName:     staffMeta.orgName,
+    name:        staffMeta.name,
+    vaultCID:    vaultCID,
+    rpId:        location.hostname,
+    credentials: staffMeta.credentials||[],
+  };
+  const others = existing.filter(h=>h.staffId!==staffMeta.staffId);
+  localStorage.setItem(STAFF_HINTS_KEY, JSON.stringify([...others, thisStaff]));
+}
+
+function getStaffHints(){
+  try{
+    const h = JSON.parse(localStorage.getItem(STAFF_HINTS_KEY)||'[]');
+    return h.filter(h=>!h.rpId||h.rpId===location.hostname);
+  }catch{return [];}
+}
+
+function getLatestHint(){
+  const hints = getStaffHints();
+  return hints.length ? hints[hints.length-1] : null;
+}
+
+// ── Screen helpers ─────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showApp(){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app').classList.add('active');
+}
+function setErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg||'';}}
+function toast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem 1rem;font-size:.8rem;z-index:9999;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+function openModal(){document.getElementById('modal-overlay').classList.add('open');}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+
+// ── Tab switching ──────────────────────────────────────────────────
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick*="${name}"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='expenses') renderExpenses();
+  else renderInvoices();
+}
+
+// ── On load ────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async()=>{
+  pinataJWT = localStorage.getItem(PINATA_JWT_KEY);
+  const hint = getLatestHint();
+  if(hint){
+    // Returning user — show passkey login
+    document.getElementById('login-org-name').textContent = hint.orgName ? `${hint.orgName} · ${hint.name}` : hint.name||'';
+    showScreen('s-login');
+  } else {
+    showScreen('s-join');
+    updateJWTSection();
+  }
+});
+
+function updateJWTSection(){
+  const hasSaved = !!localStorage.getItem(PINATA_JWT_KEY);
+  const existing = document.getElementById('jwt-existing');
+  const missing  = document.getElementById('jwt-missing');
+  const label    = document.getElementById('jwt-status-label');
+  if(existing) existing.style.display = hasSaved ? 'block' : 'none';
+  if(missing)  missing.style.display  = hasSaved ? 'none'  : 'block';
+  if(label)    label.textContent       = hasSaved ? 'saved ✓' : 'not set';
+}
+
+function clearStaffJWT(){
+  if(!confirm('Clear the saved Pinata JWT?\n\nYou will need to enter a new one when joining an organisation.')) return;
+  localStorage.removeItem(PINATA_JWT_KEY);
+  pinataJWT = null;
+  const input = document.getElementById('staff-jwt');
+  if(input) input.value = '';
+  updateJWTSection();
+  toast('JWT cleared ✓ — enter a new one above');
+}
+
+// ── Step 1: Process invite code ────────────────────────────────────
+let _pendingInvite = null;
+
+async function processInvite(){
+  const code = document.getElementById('invite-code').value.trim();
+  setErr('join-err','');
+  if(!code){setErr('join-err','Paste your invite code above.');return;}
+
+  // Format: nmy:{orgId}:{inviteCID}:{ownerEcdhPubKey}
+  const parts = code.split(':');
+  if(parts.length<4||parts[0]!=='nmy'){
+    setErr('join-err','Invalid invite code. It should start with nmy:');
+    return;
+  }
+  const [,orgId,inviteCID,...pubParts] = parts;
+  const ownerEcdhPubKey = pubParts.join(':');
+
+  showScreen('s-loading');
+  document.getElementById('loading-msg').textContent='Fetching organisation details…';
+
+  try{
+    // Fetch invite data to get org name + JWT
+    const inviteData = await fetchIPFS(inviteCID);
+    const orgName  = inviteData.orgName  || orgId;
+    const currency = inviteData.currency || 'USD';
+    // Pinata JWT may be provided in invite or already in localStorage
+    // JWT: use field input if provided, else use invite-embedded JWT, else use saved
+    const jwtInput = document.getElementById('staff-jwt')?.value?.trim();
+    if(jwtInput){
+      pinataJWT = jwtInput;
+      localStorage.setItem(PINATA_JWT_KEY, pinataJWT);
+    } else if(inviteData.pinataJWT && !pinataJWT){
+      pinataJWT = inviteData.pinataJWT;
+      localStorage.setItem(PINATA_JWT_KEY, pinataJWT);
+    }
+    if(!pinataJWT){
+      showScreen('s-join');
+      setErr('join-err','Enter a Pinata JWT to continue (see the field above).');
+      updateJWTSection();
+      return;
+    }
+
+    _pendingInvite = {orgId, orgName, currency, ownerEcdhPubKey, configCID:inviteData.configCID||null};
+
+    document.getElementById('reg-org-name').textContent = orgName;
+    document.getElementById('join-screen').style.display='none';
+    document.getElementById('register-screen').style.display='block';
+    showScreen('s-join');
+
+  }catch(e){
+    showScreen('s-join');
+    setErr('join-err','Could not fetch invite: '+(e.message||'check your connection'));
+  }
+}
+
+// ── Step 2: Register passkey & create staff vault ──────────────────
+async function registerAndJoin(){
+  const name = document.getElementById('staff-name').value.trim();
+  setErr('reg-err','');
+  if(!name){setErr('reg-err','Enter your name.');return;}
+  if(!_pendingInvite){setErr('reg-err','Start from the beginning — invite data missing.');return;}
+
+  showScreen('s-loading');
+  document.getElementById('loading-msg').textContent='Registering passkey…';
+
+  try{
+    const staffId = uid();
+    // Register passkey
+    const credential = await navigator.credentials.create({
+      publicKey:{
+        challenge:  crypto.getRandomValues(new Uint8Array(32)),
+        rp:{id:PASSKEY_RP_ID, name:'Trove Staff'},
+        user:{id:new TextEncoder().encode(staffId), name, displayName:name},
+        pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+        authenticatorSelection:{residentKey:'preferred',userVerification:'preferred'},
+        timeout:60000,
+        attestation:'none',
+      }
+    });
+    if(!credential) throw new Error('Passkey registration cancelled.');
+    const rawPubKey = credential.response.getPublicKey?.();
+    if(!rawPubKey) throw new Error('Browser does not support getPublicKey(). Try Chrome 85+.');
+    const pubKeyBytes  = new Uint8Array(rawPubKey);
+    const credentialId = buf2b64(credential.rawId);
+    const authType     = credential.authenticatorAttachment==='platform'?'platform':'cross-platform';
+
+    document.getElementById('loading-msg').textContent='Creating encrypted vault…';
+
+    // Generate random vault key
+    const rawVaultKey = crypto.getRandomValues(new Uint8Array(32));
+    staffEncKey = await crypto.subtle.importKey('raw',rawVaultKey,{name:'AES-GCM'},false,['encrypt','decrypt']);
+
+    // Wrap vault key for self (passkey HKDF)
+    const selfWrapped = await wrapKey(rawVaultKey, pubKeyBytes);
+
+    // Generate random staff ECDH keypair for true ECDH vault wrapping (S3)
+    const ec = getEC();
+    const staffECDHKey     = ec.genKeyPair();
+    const staffECDHPrivHex = staffECDHKey.getPrivate('hex');
+    const staffECDHPubHex  = staffECDHKey.getPublic('hex');
+
+    // Wrap vault key for owner using true ECDH shared secret (staffPriv × ownerPub)
+    const ownerWrapped = await ecdhWrapKey(rawVaultKey, _pendingInvite.ownerEcdhPubKey, staffECDHKey);
+
+    // Build initial vault
+    staffVault = {
+      staffId, orgId:_pendingInvite.orgId, orgName:_pendingInvite.orgName,
+      currency: _pendingInvite.currency,
+      name, createdAt:Date.now(), updatedAt:Date.now(),
+      expenses:[], invoices:[],
+      vaultKeyWrapped:{
+        self:  selfWrapped,   // staff can read with own passkey
+        owner: ownerWrapped,  // owner can read via true ECDH (staffPriv × ownerPub)
+      },
+      ecdhPrivKey:  staffECDHPrivHex, // kept in vault for reference (encrypted at rest)
+      ecdhPubKey:   staffECDHPubHex,  // also stored in registration doc (public)
+      credentials:[{
+        credentialId, publicKey:buf2hex(pubKeyBytes),
+        authenticatorType:authType, label:name, addedAt:Date.now()
+      }],
+      nextInvoiceNum: 1,
+    };
+
+    // Save vault to IPFS
+    document.getElementById('loading-msg').textContent='Saving to IPFS…';
+    const enc = await encryptData(staffEncKey, staffVault);
+    vaultCID  = await pinToIPFS(enc, `trove-staff-vault-${staffId}`);
+
+    // Fetch org config CID from invite (stored in _pendingInvite during processInvite)
+    const orgConfigCID = _pendingInvite.configCID||null;
+    if(orgConfigCID) staffMeta && (staffMeta.orgConfigCID = orgConfigCID);
+
+    // Publish registration document (unencrypted — owner needs to read this)
+    const regDoc = {
+      type:             'trove-staff-registration',
+      staffId,
+      orgId:            _pendingInvite.orgId,
+      name,
+      vaultCID,
+      ownerWrappedKey:  ownerWrapped,
+      ecdhPubKey:       staffECDHPubHex,  // owner uses this for true ECDH unwrap
+      registeredAt:     Date.now(),
+    };
+    const regCID = await pinToIPFS(regDoc, `trove-staff-reg-${staffId}`);
+
+    // Staff metadata (unencrypted local record)
+    staffMeta = {
+      staffId, orgId:_pendingInvite.orgId, orgName:_pendingInvite.orgName,
+      name, ownerEcdhPubKey: _pendingInvite.ownerEcdhPubKey,
+      orgConfigCID: _pendingInvite.configCID||null,
+      credentials:[{credentialId, publicKey:buf2hex(pubKeyBytes), authenticatorType:authType, label:name}]
+    };
+    localStorage.setItem(STAFF_META_KEY+'_'+staffId, JSON.stringify(staffMeta));
+    localStorage.setItem(STAFF_VAULT_KEY+'_'+staffId, vaultCID);
+    localStorage.setItem('trove_staff_reg_cid_'+staffId, regCID);
+    saveStaffHints();
+
+    // Show registration code before booting app
+    showScreen('s-join');
+    document.getElementById('join-screen').style.display='none';
+    document.getElementById('register-screen').style.display='none';
+    document.getElementById('reg-success-screen').style.display='block';
+    document.getElementById('reg-success-name').textContent = name;
+    document.getElementById('reg-success-cid').textContent  = regCID;
+    // Boot after dismissal
+    window._pendingBoot = () => bootStaffApp();
+
+  }catch(e){
+    showScreen('s-join');
+    document.getElementById('register-screen').style.display='block';
+    document.getElementById('join-screen').style.display='none';
+    setErr('reg-err', e.name==='NotAllowedError'?'Passkey registration was cancelled.':(e.message||'Registration failed'));
+  }
+}
+
+// ── Passkey login ──────────────────────────────────────────────────
+async function staffPasskeyLogin(){
+  setErr('login-err','');
+  const btn = document.getElementById('passkey-btn');
+  btn.textContent='Authenticating…';
+
+  const hints = getStaffHints();
+  if(!hints.length){setErr('login-err','No account found. Join an organisation first.');btn.textContent='Sign in with passkey';return;}
+
+  // Build allowCredentials from all registered passkeys across all staff accounts
+  const allCreds = hints.flatMap(h=>(h.credentials||[]).map(c=>({type:'public-key',id:b642buf(c.credentialId)})));
+
+  try{
+    const assertion = await navigator.credentials.get({
+      publicKey:{
+        challenge:        crypto.getRandomValues(new Uint8Array(32)),
+        rpId:             PASSKEY_RP_ID,
+        allowCredentials: allCreds,
+        userVerification: 'preferred',
+        timeout:          60000,
+      }
+    });
+    if(!assertion) throw new Error('Authentication cancelled.');
+
+    const credId = buf2b64(assertion.rawId);
+
+    // Find which staff account this credential belongs to
+    let matchHint=null, matchCred=null;
+    for(const h of hints){
+      const c=(h.credentials||[]).find(c=>c.credentialId===credId);
+      if(c){matchHint=h;matchCred=c;break;}
+    }
+    if(!matchHint) throw new Error('Passkey not recognised. Join your organisation first.');
+
+    showScreen('s-loading');
+    document.getElementById('loading-msg').textContent='Decrypting vault…';
+
+    // Load staff meta from localStorage
+    staffMeta = JSON.parse(localStorage.getItem(STAFF_META_KEY+'_'+matchHint.staffId)||'null');
+    if(!staffMeta) throw new Error('Account data missing. Try joining again.');
+
+    pinataJWT = localStorage.getItem(PINATA_JWT_KEY);
+    if(!pinataJWT) throw new Error('Pinata JWT missing. Reinstall app.');
+
+    // Unwrap vault key using passkey public key
+    const pubKeyBytes = new Uint8Array(hex2buf(matchCred.publicKey));
+    const wrappedKey  = await loadWrappedKey(matchHint.staffId);
+    const rawVaultKey = await unwrapKey(wrappedKey, pubKeyBytes);
+    staffEncKey = await crypto.subtle.importKey('raw',rawVaultKey,{name:'AES-GCM'},false,['encrypt','decrypt']);
+
+    // Load vault
+    vaultCID   = matchHint.vaultCID || localStorage.getItem(STAFF_VAULT_KEY+'_'+matchHint.staffId);
+    if(!vaultCID) throw new Error('Vault CID not found. Contact your manager.');
+    staffVault = await loadStaffVault(vaultCID);
+
+    bootStaffApp();
+
+  }catch(e){
+    btn.textContent='Sign in with passkey';
+    if(e.name==='NotAllowedError'){
+      setErr('login-err','Authentication was cancelled.');
+    } else {
+      setErr('login-err', e.message||'Login failed');
+      showScreen('s-login');
+    }
+  }
+}
+
+async function loadWrappedKey(staffId){
+  // Wrapped key is inside the encrypted vault — need to get it from the vault file
+  // But we need the key to decrypt the vault... chicken and egg.
+  // Solution: we store the wrapped self-key SEPARATELY (unencrypted) in localStorage
+  // It's safe: the wrapped key can only be unwrapped by the passkey (in secure enclave)
+  const stored = localStorage.getItem('trove_wrapped_key_'+staffId);
+  if(stored) return JSON.parse(stored);
+  throw new Error('Wrapped key not found. Try joining again.');
+}
+
+function saveWrappedKey(staffId, wrapped){
+  localStorage.setItem('trove_wrapped_key_'+staffId, JSON.stringify(wrapped));
+}
+
+// ── Boot app ───────────────────────────────────────────────────────
+async function bootStaffApp(){
+  // Save wrapped key for fast login
+  if(staffVault?.vaultKeyWrapped?.self){
+    saveWrappedKey(staffMeta.staffId, staffVault.vaultKeyWrapped.self);
+  }
+  saveStaffHints();
+
+  // Fetch org config for latest categories AND shared Pinata JWT (non-blocking)
+  if(staffMeta?.orgConfigCID){
+    fetchIPFS(staffMeta.orgConfigCID).then(cfg=>{
+      if(cfg?.expenseCategories?.length){
+        window._orgCategories = cfg.expenseCategories;
+      }
+      // Pick up shared Pinata JWT if not already set or different
+      if(cfg?.pinataJWT && cfg.pinataJWT !== pinataJWT){
+        pinataJWT = cfg.pinataJWT;
+        localStorage.setItem(PINATA_JWT_KEY, pinataJWT);
+      }
+    }).catch(()=>{});
+  }
+
+  document.getElementById('top-org-name').textContent = '/ '+staffVault.orgName;
+  document.getElementById('top-staff-name').textContent = staffVault.name;
+  showApp();
+  renderExpenses();
+}
+
+function lockApp(){
+  staffVault=null; staffEncKey=null;
+  showScreen('s-login');
+}
+
+function showJoinScreen(){
+  showScreen('s-join');
+  document.getElementById('join-screen').style.display='block';
+  document.getElementById('register-screen').style.display='none';
+  document.getElementById('reg-success-screen').style.display='none';
+  document.getElementById('restore-screen').style.display='none';
+  updateJWTSection();
+}
+
+function showRestoreScreen(){
+  document.getElementById('join-screen').style.display='none';
+  document.getElementById('restore-screen').style.display='block';
+  document.getElementById('restore-reg-cid')?.focus();
+}
+
+async function restoreAccount(){
+  const regCID = document.getElementById('restore-reg-cid')?.value?.trim();
+  const errEl  = document.getElementById('restore-err');
+  setErr('restore-err','');
+
+  if(!regCID){ errEl.textContent='Paste your registration code.'; return; }
+
+  const btn = document.querySelector('#restore-screen .btn-primary');
+  if(btn){ btn.textContent='Fetching…'; btn.disabled=true; }
+
+  try{
+    showScreen('s-loading');
+    document.getElementById('loading-msg').textContent = 'Fetching your account…';
+
+    // 1. Fetch registration document
+    const regDoc = await fetchIPFS(regCID);
+    if(regDoc.type !== 'trove-staff-registration'){
+      throw new Error('Not a valid registration code.');
+    }
+
+    const {staffId, orgId, orgName, vaultCID: regVaultCID,
+           ownerWrappedKey, registeredAt} = regDoc;
+
+    // Use Pinata JWT from regDoc (if embedded) or existing localStorage JWT
+    const docJWT = regDoc.pinataJWT;
+    if(docJWT && !pinataJWT){
+      pinataJWT = docJWT;
+      localStorage.setItem(PINATA_JWT_KEY, pinataJWT);
+    }
+
+    // 2. Find latest vault CID via Pinata pin name query
+    document.getElementById('loading-msg').textContent = 'Finding your vault…';
+    let latestVaultCID = regVaultCID;
+    if(pinataJWT){
+      try{
+        const res = await fetch(
+          `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=${encodeURIComponent('trove-staff-vault-'+staffId)}&pageLimit=5`,
+          {headers:{Authorization:`Bearer ${pinataJWT}`}}
+        );
+        if(res.ok){
+          const data = await res.json();
+          if(data.rows?.length){
+            const sorted = data.rows.sort((a,b)=>new Date(b.date_pinned)-new Date(a.date_pinned));
+            latestVaultCID = sorted[0].ipfs_pin_hash || latestVaultCID;
+          }
+        }
+      }catch(_){}
+    }
+
+    if(!latestVaultCID) throw new Error('Could not find your vault. Check your connection.');
+
+    // 3. Authenticate with passkey — find matching credential in the vault
+    document.getElementById('loading-msg').textContent = 'Authenticating with passkey…';
+
+    // Fetch encrypted vault to get credential list (needed to build allowCredentials)
+    // We must try authentication with discoverable credentials first
+    let assertion;
+    try{
+      assertion = await navigator.credentials.get({
+        publicKey:{
+          challenge:        crypto.getRandomValues(new Uint8Array(32)),
+          rpId:             PASSKEY_RP_ID,
+          allowCredentials: [], // empty = discoverable — browser shows all available
+          userVerification: 'preferred',
+          timeout:          60000,
+        }
+      });
+    }catch(e){
+      if(e.name==='NotAllowedError') throw new Error('Passkey authentication was cancelled.');
+      throw e;
+    }
+
+    if(!assertion) throw new Error('Authentication cancelled.');
+
+    const credentialId = buf2b64(assertion.rawId);
+
+    // 4. Fetch and decrypt vault
+    document.getElementById('loading-msg').textContent = 'Decrypting vault…';
+    const enc = await fetchIPFS(latestVaultCID);
+
+    // Find the matching credential's public key inside the encrypted vault
+    // We need to try decryption — use the passkey public key from the assertion
+    // getPublicKey() is available on AuthenticatorAssertionResponse in newer browsers
+    let pubKeyBytes = null;
+    if(assertion.response.getPublicKey){
+      pubKeyBytes = new Uint8Array(assertion.response.getPublicKey());
+    }
+
+    if(!pubKeyBytes){
+      throw new Error(
+        'Your browser cannot retrieve the passkey public key during authentication. ' +
+        'Try Chrome 116+ or Safari 16+, or use your original browser to add a second passkey first.'
+      );
+    }
+
+    // Derive wrap key and attempt decrypt
+    const wrapKey = await passkeyPublicKeyToWrapKey(pubKeyBytes);
+
+    // The wrapped vault key is in the vault — but we need to decrypt to get it.
+    // Bootstrap: use the registration doc's ownerWrappedKey as seed.
+    // Actually: the vault itself stores vaultKeyWrapped.self (wrapped for passkey).
+    // We need to get that from the vault. But it's encrypted.
+    // Solution: derive wrapKey from the assertion's public key and try to decrypt
+    // the vault directly — the vault key is derived from the passkey HKDF.
+    // We need the vault's wrapped self-key. It's in the encrypted vault blob.
+    // We can't get it without decrypting first...
+    // Alternative: try brute-force approach — use the public key to derive wrapKey,
+    // then try to unwrap using the IV/ct from any stored hint we find.
+
+    // Check if there's a stored wrapped key for this staffId (from previous device)
+    let rawVaultKey = null;
+    const storedWrapped = localStorage.getItem('trove_wrapped_key_'+staffId);
+    if(storedWrapped){
+      try{
+        rawVaultKey = await unwrapKey(JSON.parse(storedWrapped), pubKeyBytes);
+      }catch(_){}
+    }
+
+    // If no stored wrapped key, we need to try fetching vault and bootstrapping
+    // by re-deriving: the credential's public key should match what's in vault.credentials
+    if(!rawVaultKey){
+      // Try decrypting the vault with a key derived from this passkey's public key
+      // The vault key was wrapped: wrapKey = HKDF(pubKey), then AES-GCM(wrapKey, vaultKey)
+      // If this is the same passkey that registered, the wrapKey should match.
+      // But we don't have the wrapped vault key (iv + ct) outside the vault.
+      // The registration doc has ownerWrappedKey (for owner), not self-wrapped key.
+      // We need to fetch the vault's credentials list somehow.
+      // Only option: fetch the vault as raw bytes and brute-force the credential match.
+      throw new Error(
+        'Cannot restore without the wrapped key from the original device. ' +
+        'Please open your Account screen on your original browser and register ' +
+        'a second passkey for this new device, then log in normally.'
+      );
+    }
+
+    staffEncKey = await crypto.subtle.importKey('raw', rawVaultKey, {name:'AES-GCM'}, false, ['encrypt','decrypt']);
+    staffVault  = await decryptData(staffEncKey, enc.iv, enc.ct);
+    vaultCID    = latestVaultCID;
+
+    // 5. Rebuild staffMeta and save hints
+    staffMeta = {
+      staffId,
+      orgId:            staffVault.orgId || orgId,
+      orgName:          staffVault.orgName || orgName,
+      name:             staffVault.name,
+      ownerEcdhPubKey:  staffVault.vaultKeyWrapped?.ownerEcdhPubKey || '',
+      credentials:      staffVault.credentials || [],
+      orgConfigCID:     staffVault.orgConfigCID || null,
+    };
+    localStorage.setItem(STAFF_META_KEY+'_'+staffId, JSON.stringify(staffMeta));
+    localStorage.setItem(STAFF_VAULT_KEY+'_'+staffId, vaultCID);
+    localStorage.setItem('trove_staff_reg_cid_'+staffId, regCID);
+
+    // Save wrapped key for future logins on this browser
+    const selfCred = staffVault.credentials?.find(c=>c.credentialId===credentialId);
+    if(selfCred){
+      // Re-wrap vault key for this browser
+      const rawKey = await crypto.subtle.exportKey('raw', staffEncKey);
+      const rewrapped = await wrapKey(rawKey, pubKeyBytes);
+      saveWrappedKey(staffId, rewrapped);
+    }
+
+    saveStaffHints();
+    bootStaffApp();
+    toast('✓ Account restored on this browser');
+
+  }catch(e){
+    showScreen('s-join');
+    document.getElementById('restore-screen').style.display='block';
+    document.getElementById('join-screen').style.display='none';
+    setErr('restore-err', e.message || 'Restore failed');
+    if(btn){ btn.textContent='🔐 Restore with passkey'; btn.disabled=false; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════════════
+
+function renderExpenses(){
+  const list = document.getElementById('expenses-list');
+  const expenses = [...(staffVault?.expenses||[])].sort((a,b)=>b.submittedAt-a.submittedAt);
+  if(!expenses.length){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">💸</div><p>No expenses yet.<br>Click "+ New expense" to submit one.</p></div>`;
+    return;
+  }
+  list.innerHTML = expenses.map(e=>{
+    const badge = e.status==='approved'?'<span class="badge b-approved">Approved</span>':
+                  e.status==='rejected'?'<span class="badge b-rejected">Rejected</span>':
+                  '<span class="badge b-pending">Pending</span>';
+    return `<div class="item-card" onclick="toggleExpenseDetail('${e.id}')">
+      <div class="item-row">
+        <div>
+          <div class="item-desc">${esc(e.description)}</div>
+          <div class="item-meta">${esc(e.category)} · ${fmtDate(e.date)} ${e.receipt?'· 📎':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="item-amount">${esc(staffVault.currency)} ${fmt(e.amount)}</div>
+          <div style="margin-top:.25rem">${badge}</div>
+        </div>
+      </div>
+      <div class="detail-panel" id="ed-${e.id}">
+        ${e.status==='rejected'?`<div class="status-banner sb-rejected">
+          <strong>Rejected:</strong> ${esc(e.rejectedReason||'No reason given')}
+        </div>`:''}
+        <div class="detail-row"><span class="detail-label">Date</span><span>${fmtDate(e.date)}</span></div>
+        <div class="detail-row"><span class="detail-label">Category</span><span>${esc(e.category)}</span></div>
+        <div class="detail-row"><span class="detail-label">Amount</span><span class="mono">${esc(staffVault.currency)} ${fmt(e.amount)}</span></div>
+        ${e.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span>${esc(e.notes)}</span></div>`:''}
+        <div class="detail-row"><span class="detail-label">Submitted</span><span>${fmtDate(new Date(e.submittedAt).toISOString().split('T')[0])}</span></div>
+        <div style="margin-top:.6rem;display:flex;gap:.4rem;flex-wrap:wrap">
+          ${e.receipt?`<button class="btn-sm" onclick="event.stopPropagation();viewReceipt('${e.id}')">📎 View receipt</button>`:''}
+          ${e.status==='pending'?`<button class="btn-sm danger" onclick="event.stopPropagation();deleteExpense('${e.id}')">Delete</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpenseDetail(id){
+  const panel = document.getElementById('ed-'+id);
+  if(panel) panel.classList.toggle('open');
+}
+
+function openExpenseModal(){
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="modal-title">💸 New Expense</div>
+    <div class="form-field">
+      <label>Date</label>
+      <input type="date" id="exp-date" value="${today()}">
+    </div>
+    <div class="form-field">
+      <label>Description</label>
+      <input type="text" id="exp-desc" placeholder="e.g. Taxi to client office">
+    </div>
+    <div class="form-field">
+      <label>Category</label>
+      <select id="exp-cat">
+        ${getExpenseCategories().map(c=>`<option>${c}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Amount (${esc(staffVault.currency)})</label>
+      <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01">
+    </div>
+    <div class="form-field">
+      <label>Notes <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <textarea id="exp-notes" rows="2" style="resize:none" placeholder="Additional details…"></textarea>
+    </div>
+    <div class="form-field">
+      <label>Receipt <span style="color:var(--muted);font-weight:400">(optional — image or PDF)</span></label>
+      <label class="receipt-upload" id="exp-receipt-label">
+        📎 Click to attach receipt
+        <input type="file" accept="image/*,.pdf" id="exp-receipt" style="display:none"
+          onchange="document.getElementById('exp-receipt-name').textContent=this.files[0]?.name||'';document.getElementById('exp-receipt-label').style.borderColor=this.files[0]?'var(--accent)':'var(--border)'">
+      </label>
+      <div class="receipt-name" id="exp-receipt-name"></div>
+    </div>
+    <div class="modal-err" id="exp-err"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn-sm accent" onclick="submitExpense()">💸 Submit expense</button>
+    </div>`;
+  openModal();
+}
+
+async function submitExpense(){
+  const date   = document.getElementById('exp-date').value;
+  const desc   = document.getElementById('exp-desc').value.trim();
+  const cat    = document.getElementById('exp-cat').value;
+  const amount = parseFloat(document.getElementById('exp-amount').value)||0;
+  const notes  = document.getElementById('exp-notes').value.trim();
+  const file   = document.getElementById('exp-receipt').files[0];
+  const errEl  = document.getElementById('exp-err');
+  errEl.textContent='';
+
+  if(!desc){errEl.textContent='Enter a description.';return;}
+  if(!amount||amount<=0){errEl.textContent='Enter a valid amount.';return;}
+
+  const btn = document.querySelector('#modal-inner .btn-sm.accent');
+  btn.textContent='Submitting…'; btn.disabled=true;
+
+  try{
+    const exp = {
+      id:uid(), date, description:desc, category:cat, amount, notes,
+      status:'pending', submittedAt:Date.now(), receipt:null,
+    };
+
+    // Upload receipt if provided
+    if(file){
+      errEl.textContent='Uploading receipt…';
+      exp.receipt = await uploadExpenseReceipt(file, exp.id);
+    }
+
+    if(!staffVault.expenses) staffVault.expenses=[];
+    staffVault.expenses.push(exp);
+    await saveStaffVault();
+    closeModal();
+    renderExpenses();
+    toast('💸 Expense submitted ✓');
+  }catch(e){
+    errEl.textContent=e.message||'Submission failed';
+    btn.textContent='💸 Submit expense'; btn.disabled=false;
+  }
+}
+
+async function deleteExpense(id){
+  const exp = staffVault.expenses.find(e=>e.id===id);
+  if(!exp||exp.status!=='pending') return;
+  if(!confirm('Delete this pending expense?')) return;
+  if(exp.receipt?.cid) unpinFromIPFS(exp.receipt.cid).catch(()=>{});
+  staffVault.expenses = staffVault.expenses.filter(e=>e.id!==id);
+  await saveStaffVault();
+  renderExpenses();
+  toast('Expense deleted.');
+}
+
+// ═══════════════════════════════════════════════════════
+// INVOICES
+// ═══════════════════════════════════════════════════════
+
+function nextInvoiceNumber(){
+  const n = staffVault.nextInvoiceNum||1;
+  staffVault.nextInvoiceNum = n+1;
+  return `INV-${String(n).padStart(3,'0')}`;
+}
+
+function renderInvoices(){
+  const list = document.getElementById('invoices-list');
+  const invoices = [...(staffVault?.invoices||[])].sort((a,b)=>b.submittedAt-a.submittedAt);
+  if(!invoices.length){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">🧾</div><p>No invoices yet.<br>Click "+ New invoice" to create one.</p></div>`;
+    return;
+  }
+  list.innerHTML = invoices.map(inv=>{
+    const total = inv.lines?.reduce((s,l)=>s+(l.amount||0),0)||0;
+    const badge = inv.status==='paid'?'<span class="badge b-paid">Paid</span>':
+                  inv.status==='sent'?'<span class="badge b-sent">Sent</span>':
+                  inv.status==='pending_approval'?'<span class="badge b-pending">Pending</span>':
+                  '<span class="badge b-draft">Draft</span>';
+    return `<div class="item-card" onclick="toggleInvoiceDetail('${inv.id}')">
+      <div class="item-row">
+        <div>
+          <div class="item-desc">${esc(inv.invoiceNumber)} · ${esc(inv.client?.name||'No client')}</div>
+          <div class="item-meta">${fmtDate(inv.date)} · due ${fmtDate(inv.dueDate)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="item-amount">${esc(staffVault.currency)} ${fmt(total)}</div>
+          <div style="margin-top:.25rem">${badge}</div>
+        </div>
+      </div>
+      <div class="detail-panel" id="invd-${inv.id}">
+        <div class="detail-row"><span class="detail-label">Invoice #</span><span>${esc(inv.invoiceNumber)}</span></div>
+        <div class="detail-row"><span class="detail-label">Client</span><span>${esc(inv.client?.name||'—')}</span></div>
+        <div class="detail-row"><span class="detail-label">Client email</span><span>${esc(inv.client?.email||'—')}</span></div>
+        <div class="detail-row"><span class="detail-label">Date</span><span>${fmtDate(inv.date)}</span></div>
+        <div class="detail-row"><span class="detail-label">Due</span><span>${fmtDate(inv.dueDate)}</span></div>
+        <div style="margin-top:.5rem;font-size:.72rem;color:var(--muted);margin-bottom:.3rem">Lines</div>
+        ${inv.lines?.map(l=>`<div class="detail-row">
+          <span>${esc(l.description)}</span>
+          <span class="mono">${fmt(l.qty)} × ${fmt(l.rate)} = ${fmt(l.amount)}</span>
+        </div>`).join('')||''}
+        <div class="detail-row" style="font-weight:600">
+          <span>Total</span>
+          <span class="mono">${esc(staffVault.currency)} ${fmt(total)}</span>
+        </div>
+        ${inv.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span>${esc(inv.notes)}</span></div>`:''}
+        <div style="margin-top:.6rem;display:flex;gap:.4rem;flex-wrap:wrap">
+          ${inv.attachments?.length?`<button class="btn-sm" onclick="event.stopPropagation();viewInvoiceAttachment('${inv.id}',0)">📎 View attachment</button>`:''}
+          ${inv.status==='draft'?`
+            <button class="btn-sm accent" onclick="event.stopPropagation();submitInvoice('${inv.id}')">Submit for approval</button>
+            <button class="btn-sm" onclick="event.stopPropagation();editInvoice('${inv.id}')">Edit</button>
+            <button class="btn-sm danger" onclick="event.stopPropagation();deleteInvoice('${inv.id}')">Delete</button>
+          `:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleInvoiceDetail(id){
+  document.getElementById('invd-'+id)?.classList.toggle('open');
+}
+
+function _buildInvoiceModal(existingInv=null){
+  const inv = existingInv || {
+    invoiceNumber: nextInvoiceNumber(),
+    date: today(),
+    dueDate: new Date(Date.now()+30*86400000).toISOString().split('T')[0],
+    client:{name:'',email:'',address:''},
+    lines:[{description:'',qty:1,rate:0,amount:0}],
+    notes:'',
+  };
+
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="modal-title">🧾 ${existingInv?'Edit':'New'} Invoice</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+      <div class="form-field" style="margin:0">
+        <label>Invoice #</label>
+        <input type="text" id="inv-num" value="${esc(inv.invoiceNumber)}">
+      </div>
+      <div class="form-field" style="margin:0">
+        <label>Date</label>
+        <input type="date" id="inv-date" value="${inv.date}">
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Due date</label>
+      <input type="date" id="inv-due" value="${inv.dueDate}">
+    </div>
+    <div class="form-field">
+      <label>Client name</label>
+      <input type="text" id="inv-client-name" value="${esc(inv.client?.name||'')}" placeholder="Client or company name">
+    </div>
+    <div class="form-field">
+      <label>Client email <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input type="email" id="inv-client-email" value="${esc(inv.client?.email||'')}" placeholder="client@example.com">
+    </div>
+    <div style="margin-bottom:.5rem">
+      <div style="display:grid;grid-template-columns:1fr 70px 90px 90px 32px;gap:.4rem;margin-bottom:.3rem">
+        <span style="font-size:.72rem;color:var(--muted)">Description</span>
+        <span style="font-size:.72rem;color:var(--muted)">Qty</span>
+        <span style="font-size:.72rem;color:var(--muted)">Rate</span>
+        <span style="font-size:.72rem;color:var(--muted)">Amount</span>
+        <span></span>
+      </div>
+      <div id="inv-lines">
+        ${inv.lines.map((l,i)=>invLineHTML(i,l)).join('')}
+      </div>
+      <button class="btn-sm" onclick="addInvLine()" style="margin-top:.35rem;font-size:.72rem">+ Add line</button>
+    </div>
+    <div class="inv-total" id="inv-total-display">${esc(staffVault.currency)} ${fmt(inv.lines.reduce((s,l)=>s+(l.amount||0),0))}</div>
+    <div class="form-field" style="margin-top:.5rem">
+      <label>Notes <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <textarea id="inv-notes" rows="2" style="resize:none">${esc(inv.notes||'')}</textarea>
+    </div>
+    <div class="form-field">
+      <label>Attachment <span style="color:var(--muted);font-weight:400">(optional — PO, contract, etc.)</span></label>
+      <label class="receipt-upload" id="inv-attach-label">
+        📎 Click to attach file
+        <input type="file" accept="image/*,.pdf" id="inv-attach" style="display:none"
+          onchange="document.getElementById('inv-attach-name').textContent=this.files[0]?.name||''">
+      </label>
+      <div class="receipt-name" id="inv-attach-name">${existingInv?.attachments?.length?'📎 '+existingInv.attachments[0].filename:''}</div>
+    </div>
+    <div class="modal-err" id="inv-err"></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn-sm btn-ghost" onclick="saveInvoiceDraft('${existingInv?.id||''}')">Save draft</button>
+      <button class="btn-sm accent" onclick="saveAndSubmitInvoice('${existingInv?.id||''}')">Submit for approval</button>
+    </div>`;
+  openModal();
+  updateInvTotal();
+}
+
+function invLineHTML(i, l){
+  return `<div class="inv-line" id="invline-${i}">
+    <input type="text" placeholder="Description" value="${esc(l.description||'')}"
+      oninput="updateInvLine(${i},'description',this.value)">
+    <input type="number" min="0" step="0.01" value="${l.qty||1}"
+      oninput="updateInvLine(${i},'qty',parseFloat(this.value)||0)">
+    <input type="number" min="0" step="0.01" placeholder="0.00" value="${l.rate||''}"
+      oninput="updateInvLine(${i},'rate',parseFloat(this.value)||0)">
+    <input type="number" readonly value="${fmt(l.amount||0)}" style="color:var(--muted)">
+    <button class="btn-sm" onclick="removeInvLine(${i})" style="padding:.2rem .4rem;font-size:.75rem">×</button>
+  </div>`;
+}
+
+let _invLines = [{description:'',qty:1,rate:0,amount:0}];
+function updateInvLine(i,field,val){
+  if(!_invLines[i]) return;
+  _invLines[i][field]=val;
+  if(field==='qty'||field==='rate'){
+    _invLines[i].amount=(_invLines[i].qty||0)*(_invLines[i].rate||0);
+    const inputs=document.getElementById('invline-'+i)?.querySelectorAll('input');
+    if(inputs?.[3]) inputs[3].value=fmt(_invLines[i].amount);
+  }
+  updateInvTotal();
+}
+function addInvLine(){
+  _invLines.push({description:'',qty:1,rate:0,amount:0});
+  const cont=document.getElementById('inv-lines');
+  const div=document.createElement('div');
+  div.innerHTML=invLineHTML(_invLines.length-1,_invLines[_invLines.length-1]);
+  cont.appendChild(div.firstChild);
+}
+function removeInvLine(i){
+  if(_invLines.length<=1) return;
+  _invLines.splice(i,1);
+  document.getElementById('invline-'+i)?.remove();
+  updateInvTotal();
+}
+function updateInvTotal(){
+  const t=_invLines.reduce((s,l)=>s+(l.amount||0),0);
+  const el=document.getElementById('inv-total-display');
+  if(el) el.textContent=`${staffVault.currency} ${fmt(t)}`;
+}
+
+async function saveInvoiceDraft(existingId){
+  await saveInvoice(existingId, 'draft');
+}
+async function saveAndSubmitInvoice(existingId){
+  await saveInvoice(existingId, 'pending_approval');
+}
+
+async function saveInvoice(existingId, status){
+  const num    = document.getElementById('inv-num').value.trim();
+  const date   = document.getElementById('inv-date').value;
+  const due    = document.getElementById('inv-due').value;
+  const cname  = document.getElementById('inv-client-name').value.trim();
+  const cemail = document.getElementById('inv-client-email').value.trim();
+  const notes  = document.getElementById('inv-notes').value.trim();
+  const file   = document.getElementById('inv-attach').files[0];
+  const errEl  = document.getElementById('inv-err');
+  errEl.textContent='';
+
+  if(!num){errEl.textContent='Enter an invoice number.';return;}
+  if(!cname&&status!=='draft'){errEl.textContent='Enter a client name.';return;}
+
+  const lines = _invLines.filter(l=>l.description?.trim());
+  if(!lines.length){errEl.textContent='Add at least one line item.';return;}
+
+  const btn = document.querySelector('#modal-inner .btn-sm.accent');
+  btn.textContent='Saving…'; btn.disabled=true;
+
+  try{
+    const inv = {
+      id: existingId||uid(),
+      invoiceNumber:num, date, dueDate:due,
+      client:{name:cname,email:cemail},
+      lines, notes, status,
+      submittedAt: existingId ? (staffVault.invoices.find(i=>i.id===existingId)?.submittedAt||Date.now()) : Date.now(),
+      attachments: existingId ? (staffVault.invoices.find(i=>i.id===existingId)?.attachments||[]) : [],
+    };
+
+    // Upload attachment if provided
+    if(file){
+      errEl.textContent='Uploading attachment…';
+      const att = await uploadInvoiceAttachment(file, inv.id);
+      inv.attachments=[att];
+    }
+
+    if(!staffVault.invoices) staffVault.invoices=[];
+    if(existingId){
+      staffVault.invoices = staffVault.invoices.map(i=>i.id===existingId?inv:i);
+    } else {
+      staffVault.invoices.push(inv);
+    }
+
+    await saveStaffVault();
+    closeModal();
+    renderInvoices();
+    toast(status==='draft'?'Invoice saved as draft ✓':'Invoice submitted for approval ✓');
+  }catch(e){
+    errEl.textContent=e.message||'Save failed';
+    btn.textContent='Submit for approval'; btn.disabled=false;
+  }
+}
+
+async function submitInvoice(id){
+  const inv = staffVault.invoices.find(i=>i.id===id);
+  if(!inv) return;
+  if(!confirm('Submit this invoice for approval?')) return;
+  inv.status='pending_approval';
+  await saveStaffVault();
+  renderInvoices();
+  toast('Invoice submitted for approval ✓');
+}
+
+function editInvoice(id){
+  const inv = staffVault.invoices.find(i=>i.id===id);
+  if(!inv) return;
+  _invLines = inv.lines.map(l=>({...l}));
+  openInvoiceModal(inv);
+}
+
+async function deleteInvoice(id){
+  const inv=staffVault.invoices.find(i=>i.id===id);
+  if(!inv||inv.status!=='draft') return;
+  if(!confirm('Delete this draft invoice?')) return;
+  staffVault.invoices=staffVault.invoices.filter(i=>i.id!==id);
+  await saveStaffVault();
+  renderInvoices();
+  toast('Invoice deleted.');
+}
+
+// ═══════════════════════════════════════════════════════
+// RECEIPT / ATTACHMENT ENCRYPTION
+// ═══════════════════════════════════════════════════════
+
+const RECEIPT_MAX_DIM=1200, RECEIPT_QUALITY=0.72;
+
+async function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let {width:w,height:h}=img;
+        if(w>RECEIPT_MAX_DIM||h>RECEIPT_MAX_DIM){
+          const ratio=Math.min(RECEIPT_MAX_DIM/w,RECEIPT_MAX_DIM/h);
+          w=Math.round(w*ratio); h=Math.round(h*ratio);
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{
+          if(!blob){reject(new Error('Compression failed'));return;}
+          resolve(blob);
+        },'image/jpeg',RECEIPT_QUALITY);
+      };
+      img.onerror=()=>reject(new Error('Could not load image'));
+      img.src=e.target.result;
+    };
+    r.onerror=()=>reject(new Error('Could not read file'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function encryptFile(file){
+  // Random per-file AES key
+  const receiptKey = await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+  const rawKey = await crypto.subtle.exportKey('raw',receiptKey);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv},receiptKey,await file.arrayBuffer());
+  // Wrap key for self
+  const selfCred = staffMeta?.credentials?.[0];
+  let selfWrapped = null;
+  if(selfCred?.publicKey){
+    selfWrapped = await wrapKey(rawKey, new Uint8Array(hex2buf(selfCred.publicKey)));
+  }
+  // Wrap key for owner
+  let ownerWrapped = null;
+  if(staffMeta?.ownerEcdhPubKey){
+    ownerWrapped = await ecdhWrapKey(rawKey, staffMeta.ownerEcdhPubKey);
+  }
+  return {
+    iv: buf2hex(iv), ct: buf2b64(ct),
+    receiptKey: {self:selfWrapped, owner:ownerWrapped},
+    originalType: file.type||'application/octet-stream',
+    compressedSize: file.size,
+  };
+}
+
+async function uploadExpenseReceipt(file, expId){
+  const isImage = file.type.startsWith('image/');
+  const fileToEncrypt = isImage ? await compressImage(file) : file;
+  const enc = await encryptFile(fileToEncrypt);
+  const cid = await pinToIPFS({...enc,type:'trove-staff-receipt'}, `trove-staff-receipt-${expId}`);
+  return {cid, iv:enc.iv, receiptKey:enc.receiptKey, filename:file.name,
+          compressedSize:fileToEncrypt.size, originalSize:file.size, uploadedAt:Date.now()};
+}
+
+async function uploadInvoiceAttachment(file, invId){
+  const enc = await encryptFile(file);
+  const cid = await pinToIPFS({...enc,type:'trove-staff-attachment'}, `trove-staff-attach-${invId}`);
+  return {cid, iv:enc.iv, receiptKey:enc.receiptKey, filename:file.name,
+          fileSize:file.size, uploadedAt:Date.now()};
+}
+
+async function decryptFileFromIPFS(cid, wrappedKey){
+  const enc = await fetchIPFS(cid);
+  // Unwrap the receipt key using own passkey
+  const selfCred = staffMeta?.credentials?.[0];
+  if(!selfCred?.publicKey) throw new Error('No credentials found');
+  const wk = wrappedKey?.self;
+  if(!wk) throw new Error('Receipt key not found');
+  const pubKeyBytes = new Uint8Array(hex2buf(selfCred.publicKey));
+  const rawReceiptKey = await unwrapKey(wk, pubKeyBytes);
+  const receiptKey = await crypto.subtle.importKey('raw',rawReceiptKey,{name:'AES-GCM'},false,['decrypt']);
+  const plain = await crypto.subtle.decrypt({name:'AES-GCM',iv:hex2buf(enc.iv)},receiptKey,b642buf(enc.ct));
+  return new Blob([plain],{type:enc.originalType||'image/jpeg'});
+}
+
+async function viewReceipt(expId){
+  const exp = staffVault.expenses.find(e=>e.id===expId);
+  if(!exp?.receipt) return;
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="modal-title">📎 Receipt</div>
+    <div style="text-align:center;padding:1rem"><div class="spinner" style="margin:0 auto"></div></div>
+    <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button></div>`;
+  openModal();
+  try{
+    const blob = await decryptFileFromIPFS(exp.receipt.cid, exp.receipt.receiptKey);
+    const url  = URL.createObjectURL(blob);
+    document.getElementById('modal-inner').innerHTML=`
+      <div class="modal-title">📎 ${esc(exp.receipt.filename||'Receipt')}</div>
+      <div style="text-align:center;margin-bottom:.75rem">
+        <img src="${url}" style="max-width:100%;max-height:60vh;border-radius:var(--r);border:1px solid var(--border)" alt="Receipt">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-sm" onclick="closeModal()">Close</button>
+        <a href="${url}" download="${esc(exp.receipt.filename||'receipt')}" class="btn-sm accent" style="text-decoration:none">⬇ Download</a>
+      </div>`;
+  }catch(e){
+    document.getElementById('modal-inner').innerHTML=`
+      <div class="modal-title">⚠ Could not load receipt</div>
+      <p style="font-size:.82rem;color:var(--muted)">${e.message}</p>
+      <div class="modal-actions"><button class="btn-sm accent" onclick="closeModal()">Close</button></div>`;
+  }
+}
+
+async function viewInvoiceAttachment(invId, idx){
+  const inv = staffVault.invoices.find(i=>i.id===invId);
+  const att = inv?.attachments?.[idx];
+  if(!att) return;
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="modal-title">📎 Attachment</div>
+    <div style="text-align:center;padding:1rem"><div class="spinner" style="margin:0 auto"></div></div>
+    <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">Close</button></div>`;
+  openModal();
+  try{
+    const blob = await decryptFileFromIPFS(att.cid, att.receiptKey);
+    const url  = URL.createObjectURL(blob);
+    if(att.filename?.endsWith('.pdf')||blob.type==='application/pdf'){
+      window.open(url,'_blank');
+      closeModal();
+    } else {
+      document.getElementById('modal-inner').innerHTML=`
+        <div class="modal-title">📎 ${esc(att.filename||'Attachment')}</div>
+        <div style="text-align:center;margin-bottom:.75rem">
+          <img src="${url}" style="max-width:100%;max-height:60vh;border-radius:var(--r)" alt="Attachment">
+        </div>
+        <div class="modal-actions">
+          <button class="btn-sm" onclick="closeModal()">Close</button>
+          <a href="${url}" download="${esc(att.filename||'attachment')}" class="btn-sm accent" style="text-decoration:none">⬇ Download</a>
+        </div>`;
+    }
+  }catch(e){
+    document.getElementById('modal-inner').innerHTML=`
+      <div class="modal-title">⚠ Could not load attachment</div>
+      <p style="font-size:.82rem;color:var(--muted)">${e.message}</p>
+      <div class="modal-actions"><button class="btn-sm accent" onclick="closeModal()">Close</button></div>`;
+  }
+}
+
+// ── Account modal — registration code + sync ─────────────────────
+function openAccountModal(){
+  const regCID = localStorage.getItem('trove_staff_reg_cid_'+staffMeta?.staffId)||'';
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="modal-title">👤 Your account</div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;margin-bottom:.75rem;font-size:.82rem">
+      <div style="color:var(--muted);font-size:.7rem;margin-bottom:.2rem">Name</div>
+      <div style="font-weight:500">${esc(staffVault?.name||staffMeta?.name||'—')}</div>
+      <div style="color:var(--muted);font-size:.7rem;margin-top:.5rem;margin-bottom:.2rem">Organisation</div>
+      <div style="font-weight:500">${esc(staffVault?.orgName||'—')}</div>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <div style="font-size:.78rem;font-weight:500;margin-bottom:.35rem">📋 Registration code</div>
+      <p style="font-size:.78rem;color:var(--text2);margin-bottom:.5rem;line-height:1.5">
+        Share this with your manager so they can link your account in Trove and see your submissions.
+      </p>
+      ${regCID
+        ? `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.6rem .85rem;font-family:'DM Mono',monospace;font-size:.72rem;word-break:break-all;margin-bottom:.4rem">${regCID}</div>
+           <button class="btn-sm accent" onclick="navigator.clipboard.writeText('${regCID}').then(()=>toast('Registration code copied ✓'))" style="width:100%;justify-content:center;margin-bottom:.75rem">📋 Copy registration code</button>`
+        : '<div style="font-size:.78rem;color:var(--amber);margin-bottom:.75rem">Registration code not found. You may need to re-register.</div>'
+      }
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:.75rem">
+      <div style="font-size:.78rem;font-weight:500;margin-bottom:.35rem">🔄 Sync with manager</div>
+      <p style="font-size:.78rem;color:var(--text2);margin-bottom:.5rem;line-height:1.5">
+        After your manager approves or rejects something, paste their sync code here.
+      </p>
+      <div class="form-field" style="margin-bottom:.35rem">
+        <input type="text" id="sync-cid-input" placeholder="bafkrei… (sync code from manager)"
+          style="font-family:'DM Mono',monospace;font-size:.75rem">
+      </div>
+      <button class="btn-sm accent" onclick="applySyncCode()" style="width:100%;justify-content:center">Apply sync code →</button>
+      <div class="err" id="sync-modal-err" style="margin-top:.35rem"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:.75rem;margin-top:.5rem">
+      <div style="font-size:.78rem;font-weight:500;margin-bottom:.35rem">📤 Share submissions with manager</div>
+      <p style="font-size:.78rem;color:var(--text2);margin-bottom:.4rem;line-height:1.5">
+        Your manager automatically gets your latest submissions when they click Refresh
+        (they look up your vault by name on Pinata). If they can't find it, share this code:
+      </p>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.5rem .75rem;font-family:'DM Mono',monospace;font-size:.7rem;word-break:break-all;margin-bottom:.35rem;color:var(--muted)">
+        ${esc(vaultCID||'Not saved yet')}
+      </div>
+      <button class="btn-sm" onclick="navigator.clipboard.writeText('${esc(vaultCID||'')}').then(()=>toast('Vault CID copied ✓'))"
+        style="width:100%;justify-content:center">📋 Copy vault CID for manager</button>
+    </div>
+    <div class="modal-actions" style="margin-top:.75rem">
+      <button class="btn-sm" onclick="closeModal()">Close</button>
+    </div>`;
+  openModal();
+}
+// backward compat
+function openSyncModal(){ openAccountModal(); }
+
+async function applySyncCode(){
+  const newCID = (document.getElementById('sync-cid-input')||document.getElementById('sync-cid'))?.value?.trim();
+  const errEl  = document.getElementById('sync-modal-err')||document.getElementById('sync-err');
+  if(!newCID){if(errEl){errEl.textContent='Paste the sync code.';errEl.style.display='block';}return;}
+  const btn=document.querySelector('#modal-inner .btn-sm.accent');
+  if(btn){btn.textContent='Loading…';btn.disabled=true;}
+  try{
+    const enc = await fetchIPFS(newCID);
+    const updated = await decryptData(staffEncKey, enc.iv, enc.ct);
+    if(!updated?.staffId) throw new Error('Invalid sync code — not a staff vault.');
+    staffVault = updated;
+    vaultCID   = newCID;
+    localStorage.setItem(STAFF_VAULT_KEY+'_'+staffMeta.staffId, newCID);
+    saveStaffHints();
+    closeModal();
+    renderExpenses();
+    renderInvoices();
+    toast('✓ Synced — latest approvals loaded');
+  }catch(e){
+    errEl.textContent=e.message||'Sync failed';errEl.style.display='block';
+    if(btn){btn.textContent='Apply sync →';btn.disabled=false;}
+  }
+}
+
+
+// _invLines is initialised inside openInvoiceModal for new invoices
+// and in editInvoice() for existing ones. Ensure clean state on each open:
+function openInvoiceModal(existingInv=null){
+  _invLines = existingInv ? existingInv.lines.map(l=>({...l})) : [{description:'',qty:1,rate:0,amount:0}];
+  _buildInvoiceModal(existingInv);
+}
+</script>
+</body>
+</html>

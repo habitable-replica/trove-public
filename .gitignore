@@ -1,0 +1,17 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Cloudflare / Wrangler
+.wrangler/
+
+# Secrets — NEVER commit these
+.env
+.env.*
+*.jwt
+secrets.json
