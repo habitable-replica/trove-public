@@ -104,8 +104,9 @@ a{color:var(--blue)}
 .detail-label{color:var(--muted)}
 
 /* ── Invoice lines ────────────────────────────────────────────── */
+.inv-line-head{display:grid;grid-template-columns:1fr 70px 90px 90px 32px;gap:.4rem;margin-bottom:.3rem}
 .inv-line{display:grid;grid-template-columns:1fr 70px 90px 90px 32px;gap:.4rem;align-items:center;margin-bottom:.35rem;font-size:.78rem}
-.inv-line input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.78rem;padding:.35rem .5rem}
+.inv-line input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.78rem;padding:.35rem .5rem;min-width:0}
 .inv-total{text-align:right;font-family:'DM Mono',monospace;font-size:.85rem;font-weight:600;color:var(--accent);margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border)}
 
 /* ── Receipt upload ───────────────────────────────────────────── */
@@ -118,6 +119,25 @@ a{color:var(--blue)}
 /* ── Status banner ────────────────────────────────────────────── */
 .status-banner{border-radius:var(--r);padding:.5rem .85rem;font-size:.78rem;margin-bottom:.75rem;line-height:1.5}
 .sb-rejected{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2);color:var(--text2)}
+
+/* ── Mobile responsive ────────────────────────────────────────── */
+@media(max-width:600px){
+  body{font-size:13.5px}
+  .screen{padding:1rem}
+  .card{padding:1.5rem}
+  .topbar{padding:.55rem .75rem}
+  .top-org{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:42vw}
+  .tabs{padding:0 .5rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab-btn{padding:.7rem .85rem;white-space:nowrap}
+  .tab-content{padding:.85rem}
+  .section-header{flex-wrap:wrap;gap:.4rem}
+  .modal-overlay{padding:.5rem}
+  .modal{padding:1.15rem;max-height:94vh}
+}
+@media(max-width:430px){
+  .inv-line-head,.inv-line{grid-template-columns:1fr 40px 60px 60px 22px;gap:.25rem;font-size:.72rem}
+  .inv-line input{padding:.3rem .35rem;font-size:.72rem}
+}
 </style>
 </head>
 <body>
@@ -130,7 +150,7 @@ a{color:var(--blue)}
       <span class="logo-text">Trove Staff</span>
     </div>
     <div class="tagline">Expenses & Invoices</div>
-    <div class="version">2026 May Stable Build · trove-v1</div>
+    <div class="version">Build <span data-build>…</span> · trove-v1 · <a data-repo target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">Source ↗</a></div>
     <div id="join-screen">
       <div style="text-align:center;font-size:2rem;margin-bottom:.75rem">👋</div>
       <h2>Join your organisation</h2>
@@ -242,7 +262,7 @@ a{color:var(--blue)}
       <span class="logo-text">Trove Staff</span>
     </div>
     <div class="tagline">Expenses & Invoices</div>
-    <div class="version">2026 May Stable Build · trove-v1</div>
+    <div class="version">Build <span data-build>…</span> · trove-v1 · <a data-repo target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">Source ↗</a></div>
     <div style="text-align:center;font-size:1.6rem;margin-bottom:.5rem">🔐</div>
     <h2>Welcome back</h2>
     <p id="login-org-name" style="margin-bottom:1rem"></p>
@@ -310,6 +330,12 @@ a{color:var(--blue)}
 
 <script>
 'use strict';
+// Build identifier — stamped on deploy by scripts/stamp-build.mjs (date · git SHA).
+// Lets you confirm which build is live. Shown on the join/login screens.
+const APP_BUILD = '2026-07-01 · 09db190';
+const REPO_URL  = 'https://github.com/habitable-replica/trove-public';
+try { document.querySelectorAll('[data-build]').forEach(el => { el.textContent = APP_BUILD; }); } catch(_){}
+try { document.querySelectorAll('a[data-repo]').forEach(a => { a.href = REPO_URL; }); } catch(_){}
 // ═══════════════════════════════════════════════════════
 // TROVE STAFF — Expenses & Invoices
 // Passkey-only authentication. No MetaMask required.
@@ -1284,7 +1310,7 @@ function _buildInvoiceModal(existingInv=null){
       <input type="email" id="inv-client-email" value="${esc(inv.client?.email||'')}" placeholder="client@example.com">
     </div>
     <div style="margin-bottom:.5rem">
-      <div style="display:grid;grid-template-columns:1fr 70px 90px 90px 32px;gap:.4rem;margin-bottom:.3rem">
+      <div class="inv-line-head">
         <span style="font-size:.72rem;color:var(--muted)">Description</span>
         <span style="font-size:.72rem;color:var(--muted)">Qty</span>
         <span style="font-size:.72rem;color:var(--muted)">Rate</span>

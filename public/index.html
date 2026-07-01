@@ -85,6 +85,7 @@ textarea{resize:vertical;min-height:60px}
 .top-logo{display:flex;align-items:center;gap:.45rem;flex-shrink:0}
 .top-logo-text{font-weight:700;font-size:.9rem;color:var(--text)}
 .top-org{font-size:.75rem;color:var(--muted);flex-shrink:0}
+.build-tag{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--muted);opacity:.6;white-space:nowrap;flex-shrink:0}
 .addr-pill{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:.2rem .55rem;flex-shrink:0;display:flex;align-items:center;gap:.35rem}
 .nav-tabs{display:flex;gap:.1rem;flex:1;overflow-x:auto}
 .nav-tabs::-webkit-scrollbar{display:none}
@@ -651,6 +652,29 @@ textarea{resize:vertical;min-height:60px}
   .inv-paper-head,.inv-paper-body,.inv-paper-foot{page-break-inside:avoid}
 }
 
+/* ── Mobile responsive (layout only) ──────────────────────────── */
+@media(max-width:768px){
+  /* Invoice editor: stack form above preview instead of side-by-side */
+  .inv-wrap{display:block;min-height:0}
+  .inv-form{position:static;top:auto;max-height:none}
+  .inv-preview{padding:1.1rem}
+  .inv-parties{grid-template-columns:1fr;gap:1rem}
+  .inv-notes-row{grid-template-columns:1fr;gap:1rem}
+  /* Collapse multi-column content grids */
+  .summary-grid,.zk-stats{grid-template-columns:1fr 1fr}
+  .export-modal-grid,.inv-row2{grid-template-columns:1fr}
+  /* Let grid form-controls shrink instead of overflowing their track */
+  .je-line-row select,.je-line-row input,.inv-item-row input{min-width:0}
+}
+@media(max-width:600px){
+  .summary-grid,.zk-stats{grid-template-columns:1fr}
+}
+@media(max-width:430px){
+  .inv-item-head,.inv-item-row{grid-template-columns:1fr 40px 60px 56px 18px;gap:.3rem}
+  .inv-paper-head{padding:1.5rem 1.25rem 1.25rem}
+  .inv-paper-body{padding:1.25rem 1.25rem}
+  .inv-paper-foot{padding:.85rem 1.25rem}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/elliptic/6.5.4/elliptic.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.3/build/snarkjs.min.js"></script>
@@ -667,7 +691,7 @@ textarea{resize:vertical;min-height:60px}
     <div class="auth-logo"><svg viewBox="0 0 40 40" fill="none" width="26" height="26"><circle cx="20" cy="20" r="18" stroke="#3fb950" stroke-width="2.5" fill="none" opacity=".7"/><circle cx="20" cy="20" r="10" stroke="#3fb950" stroke-width="2" fill="none"/><circle cx="20" cy="20" r="3" fill="#3fb950"/><circle cx="20" cy="5" r="2" fill="#3fb950" opacity=".7"/><circle cx="32" cy="28" r="2" fill="#3fb950" opacity=".7"/></svg><span class="auth-logo-text">Trove</span></div>
     <div class="auth-sub">Encrypted · Decentralised · Multi-User</div>
     <div style="font-size:.62rem;color:var(--muted);letter-spacing:.05em;margin-top:-.75rem;margin-bottom:1.5rem;font-family:'DM Mono',monospace;opacity:.6">
-      2026 May Stable Build · trove-v1
+      Build <span data-build>…</span> · trove-v1 · <a data-repo target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">Source ↗</a>
     </div>
 
     <!-- Passkey login (shown when passkeys registered, hidden otherwise) -->
@@ -845,6 +869,7 @@ textarea{resize:vertical;min-height:60px}
     <!-- Action buttons (hidden until error) -->
     <div id="loading-actions" style="display:none;flex-direction:column;gap:.5rem">
       <button class="btn btn-primary" onclick="retryLoad()">↺ Try again</button>
+      <button class="btn btn-ghost" onclick="openLoadingGatewayUpdate()">🌐 Set dedicated gateway</button>
       <button class="btn btn-ghost" onclick="openLoadingJWTUpdate()">🔑 Update Pinata JWT</button>
       <button class="btn btn-ghost" onclick="openLoadingCIDRestore()">📋 Restore from different CID</button>
       <button class="btn btn-ghost" onclick="startFresh()" style="color:var(--muted)">Start with empty vault</button>
@@ -859,6 +884,22 @@ textarea{resize:vertical;min-height:60px}
       <div style="display:flex;gap:.5rem;margin-top:.5rem">
         <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('loading-jwt-form').style.display='none'">Cancel</button>
         <button class="btn btn-primary" style="flex:1" onclick="updateJWTAndRetry()">Save & retry</button>
+      </div>
+    </div>
+
+    <!-- Dedicated gateway inline form (hidden) — usable BEFORE login -->
+    <div id="loading-gw-form" style="display:none;margin-top:.75rem">
+      <div class="form-field">
+        <label style="color:var(--muted);font-size:.72rem">Dedicated Pinata gateway URL</label>
+        <input type="text" id="loading-gw-url" placeholder="https://yourname.mypinata.cloud">
+      </div>
+      <div class="form-field">
+        <label style="color:var(--muted);font-size:.72rem">Gateway access token <span style="opacity:.6">(only if restricted)</span></label>
+        <input type="password" id="loading-gw-token" placeholder="Leave blank for an open gateway">
+      </div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem">
+        <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('loading-gw-form').style.display='none'">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="updateGatewayAndRetry()">Save & retry</button>
       </div>
     </div>
 
@@ -883,6 +924,7 @@ textarea{resize:vertical;min-height:60px}
       <svg viewBox="0 0 40 40" fill="none" width="20" height="20"><circle cx="20" cy="20" r="18" stroke="#3fb950" stroke-width="2.5" fill="none" opacity=".7"/><circle cx="20" cy="20" r="10" stroke="#3fb950" stroke-width="2" fill="none"/><circle cx="20" cy="20" r="3" fill="#3fb950"/></svg>
       <span class="top-logo-text">Trove</span>
     </div>
+    <span class="build-tag" data-build title="Deployed build"></span>
     <span class="top-org" id="top-org-name"></span>
     <div class="addr-pill" id="addr-display">
       <span id="top-role-badge"></span>
@@ -914,6 +956,21 @@ textarea{resize:vertical;min-height:60px}
 <div id="toast"></div>
 
 <script>
+// ═══════════════════════════════════════════════════════
+// BUILD IDENTIFIER
+// ═══════════════════════════════════════════════════════
+// Stamped automatically on deploy by scripts/stamp-build.mjs (date · short
+// git SHA). Shown on the login screen, in the topbar, and in Settings so you
+// can confirm at a glance which build is actually live after a deploy.
+const APP_BUILD = '2026-07-01 · 09db190';
+const BUILD_LABEL = `Build ${APP_BUILD}`;
+// Public source repository — shown on the login screen and in Settings so the code is
+// always one click away (open source is the whole point). Confirm/adjust the URL.
+const REPO_URL    = 'https://github.com/habitable-replica/trove-public';
+// Markup above this script is already parsed, so stamp any static tags now.
+try { document.querySelectorAll('[data-build]').forEach(el => { el.textContent = APP_BUILD; }); } catch(_){}
+try { document.querySelectorAll('a[data-repo]').forEach(a => { a.href = REPO_URL; }); } catch(_){}
+
 // ═══════════════════════════════════════════════════════
 // ERROR HANDLING & RESILIENCE SYSTEM
 // ═══════════════════════════════════════════════════════
@@ -1050,6 +1107,11 @@ const PINATA_UNPIN = cid => `https://api.pinata.cloud/pinning/unpin/${cid}`;
 // Leave null to use public gateways (still encrypted, but publicly fetchable)
 const PINATA_PRIVATE_GATEWAY = null; // e.g. 'https://nmy.mypinata.cloud'
 const getPrivateGW = () => window._pinataPrivateGW || PINATA_PRIVATE_GATEWAY;
+// Pinata GATEWAY access token — DISTINCT from the API JWT. Pinata gateways
+// authenticate with this, not the API JWT (which is for the API only). Optional:
+// gateways open for the owner's own CIDs need no token.
+const GW_TOKEN_KEY   = 'nmy_pinata_gw_token';
+const getGatewayToken = () => window._pinataGwToken || null;
 
 const GATEWAYS = cid => {
   const urls = [];
@@ -1101,6 +1163,36 @@ let walletAddr = null, encKey = null, pinataJWT = null, staffPinataJWT = null;
 let vaultCID = null, summaryCID = null;
 
 // personalVault — the user's encrypted data
+// ═══════════════════════════════════════════════════════
+// VAULT SCHEMA VERSIONING & MIGRATION
+// ═══════════════════════════════════════════════════════
+// Every vault carries `schemaVersion`. On load, migrateVault() upgrades older
+// shapes to the current version via ordered, idempotent steps, so schema-changing
+// features (passkey PRF, per-item keys, classification, …) can evolve the vault
+// without silent breakage on existing data. See docs/ARCHITECTURE_NOTES.md §9.
+const VAULT_SCHEMA_VERSION = 1;
+// VAULT_MIGRATIONS[i] upgrades a vault FROM version i TO i+1. APPEND only — never
+// reorder or rewrite a shipped step (existing data was migrated through it).
+const VAULT_MIGRATIONS = [
+  // 0 → 1: baseline. Pre-versioned vaults have no schemaVersion. normaliseVault()
+  // already backfills any missing shape, so this step only marks the version.
+  (v) => v,
+];
+function migrateVault(v){
+  if(!v || typeof v !== 'object') return v;
+  const from = Number.isInteger(v.schemaVersion) ? v.schemaVersion : 0;
+  if(from > VAULT_SCHEMA_VERSION){
+    // Written by a NEWER app build — do NOT run migrations (could corrupt). Load as-is.
+    console.warn(`Vault schemaVersion ${from} > app ${VAULT_SCHEMA_VERSION}; loading without migration.`);
+    return v;
+  }
+  for(let i = from; i < VAULT_SCHEMA_VERSION; i++){
+    v = VAULT_MIGRATIONS[i](v) || v;
+  }
+  v.schemaVersion = VAULT_SCHEMA_VERSION;
+  return v;
+}
+
 let vault = {
   role: null,           // 'owner' | 'accountant' | 'staff'
   orgId: null,
@@ -1156,7 +1248,10 @@ async function deriveKey(sig, salt, iterations=600000, localSecret=''){
   // localSecret='' is used for legacy migration (old vaults didn't have it).
   const keyMaterial = sig + localSecret;
   const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(keyMaterial),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt:hex2buf(salt),iterations,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  // extractable MUST be true: the vault key is exported (exportKey 'raw') to be wrapped
+  // for a passkey, split into break-glass/recovery shares, and written into backups.
+  // With extractable=false those flows throw InvalidAccessError ("key is not extractable").
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:hex2buf(salt),iterations,hash:'SHA-256'},km,{name:'AES-GCM',length:256},true,['encrypt','decrypt']);
 }
 
 function getOrCreateLocalSecret(addr){
@@ -1580,23 +1675,26 @@ async function fetchIPFS(cid, msgEl){
   // Build list of gateways to race
   const gws = GATEWAYS(cid);
 
-  // Helper: attempt one gateway, resolve with parsed JSON or reject with error
+  // Helper: attempt one gateway, resolve with parsed JSON or reject with a tagged error.
+  // Pinata gateways authenticate with a GATEWAY ACCESS TOKEN (getGatewayToken), NEVER the
+  // API JWT — the JWT is API-only and must not leak to a gateway. Open gateways serving the
+  // owner's own CIDs need no token at all.
   function attemptGateway(url){
-    const isPinata = url.includes('pinata.cloud') || url.includes('mypinata.cloud');
-    const isPrivGW = getPrivateGW() && url.startsWith(getPrivateGW());
+    const isPinataGw = /pinata\.cloud|mypinata\.cloud/.test(url);
     const headers = {};
-    if(isPinata && pinataJWT)  headers['Authorization'] = `Bearer ${pinataJWT}`;
-    if(isPrivGW && pinataJWT)  headers['x-pinata-gateway-token'] = pinataJWT;
-
+    const gwTok = getGatewayToken();
+    if(isPinataGw && gwTok) headers['x-pinata-gateway-token'] = gwTok;
+    const t0 = Date.now();
     return fetch(url, {headers, signal:AbortSignal.timeout(10000)})
       .then(r => {
-        // Propagate JWT errors immediately — no point racing other gateways
-        if(r.status === 401 && isPinata){
-          return Promise.reject(Object.assign(new Error('jwt invalid'), {status:401}));
+        // Gateway auth rejection — surface immediately (gateway-token problem, not the API JWT)
+        if((r.status===401 || r.status===403) && isPinataGw){
+          return Promise.reject(Object.assign(new Error('gateway auth rejected'), {status:r.status, url, ms:Date.now()-t0, gatewayAuth:true}));
         }
-        if(!r.ok) return Promise.reject(new Error(`HTTP ${r.status}`));
+        if(!r.ok) return Promise.reject(Object.assign(new Error(`HTTP ${r.status}`), {status:r.status, url, ms:Date.now()-t0}));
         return r.json();
-      });
+      })
+      .catch(e => { if(e.url==null) e.url=url; if(e.ms==null) e.ms=Date.now()-t0; throw e; });
   }
 
   // Private gateway always tried first (authenticated, fastest for your own pins)
@@ -1615,8 +1713,8 @@ async function fetchIPFS(cid, msgEl){
       ]);
       return result;
     }catch(e){
-      // JWT error from private gateway — surface immediately
-      if(e?.status===401 || classifyError(e)==='pinata_jwt') throw e;
+      // Gateway-token error from the dedicated gateway — surface immediately
+      if(e?.gatewayAuth || e?.status===401 || e?.status===403 || classifyError(e)==='pinata_jwt') throw e;
       // Otherwise fall through to public gateways
       if(msgEl) msgEl.textContent = 'Private gateway unavailable — trying public…';
     }
@@ -1634,13 +1732,44 @@ async function fetchIPFS(cid, msgEl){
     );
     return result;
   }catch(aggregateErr){
-    // Check if any individual error was a JWT error — surface it
     const errors = aggregateErr?.errors || [];
+    // Per-gateway diagnostics — surfaced in the loading-error UI so failures are
+    // distinguishable (auth vs rate-limit vs timeout/not-found) instead of generic.
+    const diag = errors.map(e => ({
+      url:    e?.url || '?',
+      status: e?.status || null,
+      detail: e?.status ? `HTTP ${e.status}` : (e?.name==='TimeoutError' ? 'timeout' : (e?.message||'failed')),
+      ms:     e?.ms ?? null,
+    }));
+    window._lastGatewayDiag = diag;
+    console.warn('[fetchIPFS] all gateways failed:', diag);
+    // Gateway auth problem → surface immediately (distinct from propagation/not-found)
     for(const e of errors){
-      if(e?.status===401 || classifyError(e)==='pinata_jwt') throw e;
+      if(e?.gatewayAuth || e?.status===401 || e?.status===403){
+        throw Object.assign(new Error('gateway auth rejected'), {status:e.status||403, gatewayDiag:diag});
+      }
     }
-    throw new Error('All gateways failed — check your internet connection');
+    throw Object.assign(new Error('All IPFS gateways failed'), {gatewayDiag:diag, ipfsFetch:true});
   }
+}
+
+// Vault load uses retry/backoff: a freshly-pinned CID often needs a few seconds to
+// become servable. Retries propagation/not-found failures, NOT auth (surface those).
+async function fetchIPFSWithRetry(cid, msgEl, attempts=4){
+  let lastErr;
+  for(let i=0;i<attempts;i++){
+    try{ return await fetchIPFS(cid, msgEl); }
+    catch(e){
+      lastErr = e;
+      if(e?.gatewayAuth || e?.status===401 || e?.status===403 || classifyError(e)==='pinata_jwt') throw e;
+      if(i < attempts-1){
+        const wait = 2000 * Math.pow(2, i);   // 2s, 4s, 8s
+        if(msgEl) msgEl.textContent = `Gateway not ready — retrying in ${wait/1000}s (${i+1}/${attempts-1})…`;
+        await new Promise(r=>setTimeout(r, wait));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 async function pinToIPFS(payload, name){
@@ -1689,9 +1818,10 @@ function waitForEthereum(ms=3000){
 window.addEventListener('DOMContentLoaded', async()=>{
   pinataJWT      = localStorage.getItem(JWT_KEY);
   staffPinataJWT = localStorage.getItem(STAFF_JWT_KEY)||pinataJWT; // fallback to master if no staff key
-  // Load private gateway setting
+  // Load private gateway setting + gateway access token
   const savedGW = localStorage.getItem('nmy_pinata_gw');
   if(savedGW) window._pinataPrivateGW = savedGW;
+  window._pinataGwToken = localStorage.getItem(GW_TOKEN_KEY) || null;
   const msg = document.getElementById('detect-msg');
   const btn = document.getElementById('connect-btn') || document.getElementById('connect-btn-mm');
   const found = await waitForEthereum();
@@ -2776,13 +2906,13 @@ async function loadVault(cid){
   if(cidWrap) cidWrap.style.display = 'block';
 
   // Close any open inline forms
-  ['loading-jwt-form','loading-cid-form'].forEach(id=>{
+  ['loading-jwt-form','loading-cid-form','loading-gw-form'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.style.display='none';
   });
 
   try{
-    const blob = await fetchIPFS(cid, msgEl);
+    const blob = await fetchIPFSWithRetry(cid, msgEl);
     if(msgEl) msgEl.textContent = 'Decrypting…';
     let decrypted = false;
     try{
@@ -2827,11 +2957,14 @@ async function loadVault(cid){
     const explanations = {
       ipfs_fetch: {
         title: 'Could not reach IPFS',
-        msg: 'All IPFS gateways failed to respond. This is usually a network issue or an expired Pinata JWT.',
+        msg: 'Pinata can be up and a gateway still fail to serve a CID — public gateways often cannot serve a private or freshly-pinned Pinata pin. The reliable path is your dedicated Pinata gateway (set it below).',
         diag: [
           ['Check your internet connection', !navigator.onLine ? '✗ You appear to be offline' : '✓ Online'],
-          ['Pinata JWT configured', pinataJWT ? '✓ JWT is set' : '✗ No JWT — update it below'],
-          ['Try a different network', 'If on a corporate/school network, IPFS may be blocked'],
+          ['Dedicated gateway', getPrivateGW() ? `✓ ${getPrivateGW()}` : '✗ None set — add yours below for reliable fetches'],
+          ...((window._lastGatewayDiag||[]).map(d => [
+            `Gateway ${(d.url||'').replace(/^https?:\/\//,'').split('/ipfs/')[0]}`,
+            d.detail + (d.ms!=null ? ` · ${d.ms}ms` : ''),
+          ])),
           ['Check Pinata status', '<a href="https://status.pinata.cloud" target="_blank" style="color:var(--blue)">status.pinata.cloud ↗</a>'],
         ]
       },
@@ -2918,16 +3051,42 @@ async function retryLoad(){
   if(cid) await loadVault(cid);
 }
 
+function _hideLoadingForms(except){
+  ['loading-jwt-form','loading-cid-form','loading-gw-form'].forEach(id=>{
+    if(id!==except){ const el=document.getElementById(id); if(el) el.style.display='none'; }
+  });
+}
 function openLoadingJWTUpdate(){
-  document.getElementById('loading-cid-form').style.display = 'none';
+  _hideLoadingForms('loading-jwt-form');
   const jf = document.getElementById('loading-jwt-form');
   jf.style.display = jf.style.display==='none' ? 'block' : 'none';
 }
 
 function openLoadingCIDRestore(){
-  document.getElementById('loading-jwt-form').style.display = 'none';
+  _hideLoadingForms('loading-cid-form');
   const cf = document.getElementById('loading-cid-form');
   cf.style.display = cf.style.display==='none' ? 'block' : 'none';
+}
+
+function openLoadingGatewayUpdate(){
+  _hideLoadingForms('loading-gw-form');
+  const gf = document.getElementById('loading-gw-form');
+  gf.style.display = gf.style.display==='none' ? 'block' : 'none';
+}
+
+// Set the dedicated Pinata gateway (and optional gateway token) and retry — works
+// BEFORE login, so a locked-out user on a fresh browser/domain can recover.
+async function updateGatewayAndRetry(){
+  let url = document.getElementById('loading-gw-url')?.value?.trim();
+  const tok = document.getElementById('loading-gw-token')?.value?.trim();
+  if(!url){ toast('Enter your dedicated gateway URL.'); return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  url = url.replace(/\/+$/,'');                       // strip trailing slash
+  lsSet('nmy_pinata_gw', url); window._pinataPrivateGW = url;
+  if(tok){ lsSet(GW_TOKEN_KEY, tok); window._pinataGwToken = tok; }
+  document.getElementById('loading-gw-form').style.display = 'none';
+  toast('Gateway set ✓ — retrying…');
+  await retryLoad();
 }
 
 async function updateJWTAndRetry(){
@@ -3017,6 +3176,7 @@ async function saveVault(){
 
   // Save personal vault with retry
   try{
+    vault.schemaVersion = VAULT_SCHEMA_VERSION;   // stamp current schema on every save
     const enc  = await encryptData(encKey, vault);
     const name = `trove-vault-${walletAddr.slice(0,10)}-${vault.orgId||'new'}-${Date.now()}`;
     const oldCID = vaultCID;
@@ -3028,6 +3188,10 @@ async function saveVault(){
 
     lsSet(VAULT_CID(walletAddr), vaultCID);
     if(oldCID && oldCID !== vaultCID) unpinFromPinata(oldCID);
+
+    // Warm the freshly-pinned CID on the gateway so the next load isn't blocked by
+    // propagation lag (best-effort, non-blocking).
+    fetchIPFS(vaultCID, null).catch(()=>{});
 
     // Publish signed summary (non-blocking — failure doesn't break save)
     publishSignedSummary(delegationCIDs).catch(e=>{
@@ -3461,6 +3625,7 @@ function getReadyToDecrypt(){
 // ── Vault normalisation — ensures old vaults have all fields ─────────────────
 // Called after decrypting vault from IPFS. Safe to call multiple times.
 function normaliseVault(){
+  vault = migrateVault(vault);   // schema upgrade before shape backfill
   // Phase 1 fields
   if(!vault.accounts?.length)  vault.accounts  = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
   if(!vault.journal)           vault.journal   = [];
@@ -8334,7 +8499,7 @@ function openAppSettings(){
   document.getElementById('modal-inner').innerHTML = `
     <div class="modal-title">⚙️ App Settings</div>
     <div style="font-size:.68rem;color:var(--muted);margin-top:-.4rem;margin-bottom:.75rem;font-family:'DM Mono',monospace">
-      Trove · 2026 May Stable Build · <span style="color:var(--accent)">trove-v1</span> protocol
+      Trove · ${BUILD_LABEL} · <span style="color:var(--accent)">trove-v1</span> protocol · <a href="${REPO_URL}" target="_blank" rel="noopener" style="color:var(--blue)">Source ↗</a>
     </div>
     <div class="form-field">
       <label>Master Pinata JWT <span style="color:var(--muted);font-weight:400">(full access — never shared)</span></label>
@@ -8361,8 +8526,12 @@ function openAppSettings(){
       </div>
     </div>
     <div class="form-field">
-      <label>Private gateway URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <label>Private gateway URL <span style="color:var(--muted);font-weight:400">(optional, recommended for reliable fetches)</span></label>
       <input type="text" id="set-gw" value="${storedGW}" placeholder="https://yourname.mypinata.cloud">
+    </div>
+    <div class="form-field">
+      <label>Gateway access token <span style="color:var(--muted);font-weight:400">(optional — only if your gateway is restricted)</span></label>
+      <input type="password" id="set-gw-token" placeholder="${localStorage.getItem(GW_TOKEN_KEY) ? '•••• set — blank keeps current' : 'Separate from the API JWT'}">
     </div>
     <div class="form-field">
       <label>Wallet</label>
@@ -8683,7 +8852,8 @@ async function publishStaffConfig(){
 async function saveAppSettings(){
   const jwt      = document.getElementById('set-jwt')?.value?.trim();
   const staffJwt = document.getElementById('set-staff-jwt')?.value?.trim();
-  const gw      = document.getElementById('set-gw')?.value?.trim();
+  let gw        = document.getElementById('set-gw')?.value?.trim();
+  const gwToken = document.getElementById('set-gw-token')?.value?.trim();
   const restCID = document.getElementById('set-restore-cid')?.value?.trim();
   const err     = document.getElementById('set-err');
 
@@ -8706,9 +8876,14 @@ async function saveAppSettings(){
     staffPinataJWT = staffJwt;
   }
   if(gw !== undefined){
-    if(gw){ lsSet('nmy_pinata_gw', gw); window._pinataPrivateGW=gw; }
+    if(gw){
+      if(!/^https?:\/\//i.test(gw)) gw = 'https://' + gw;
+      gw = gw.replace(/\/+$/,'');
+      lsSet('nmy_pinata_gw', gw); window._pinataPrivateGW=gw;
+    }
     else  { localStorage.removeItem('nmy_pinata_gw'); window._pinataPrivateGW=null; }
   }
+  if(gwToken){ lsSet(GW_TOKEN_KEY, gwToken); window._pinataGwToken = gwToken; }
   // Save auditor index CID if provided
   const auditorIndexInput = document.getElementById('set-auditor-index')?.value?.trim();
   if(auditorIndexInput && vault.role==='auditor' && auditorIndexInput !== vault.auditorIndexCID){
