@@ -21,6 +21,36 @@ can read your books. Privacy by architecture, not by policy.
 
 ---
 
+## Independence & self-hosting
+
+The app and your identity/keys are **developer-independent today**; storage is
+independent in principle (via your own IPFS node or pinning account). The full,
+honest map — including current gaps and the roadmap to turnkey self-hosting — is
+in **[`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md)**.
+
+In short: the operator can disappear and you keep (1) the code — this repo, a
+single offline HTML file; (2) the encrypted vault — wherever *you* pinned it, plus
+your local backups; and (3) the key — your wallet/passkey and recovery shares.
+
+---
+
+## Zero-knowledge proofs — status & honest caveat
+
+Trove uses **Groth16** (via snarkjs) to prove a batch of transactions balances
+without revealing the amounts. Groth16 requires a **per-circuit trusted setup**;
+whoever ran it and kept the secret randomness ("toxic waste") could, in
+principle, forge proofs that verify as valid. This is an **integrity** concern
+(forgeability) — **not** a confidentiality one. It cannot expose anyone's data.
+
+**Current state (being transparent):** the proving/verifying keys are shipped,
+but the circuit source and a multi-party ceremony transcript are **not yet
+published**. We are (1) publishing the circuit source + the exact setup commands,
+and (2) evaluating a small multi-party setup ceremony and/or a transparent proof
+system (PLONK / STARK) so the auditability guarantee does not rest on a single
+party. Tracked as a roadmap item.
+
+---
+
 ## Repository layout
 
 ```
@@ -29,6 +59,8 @@ trove/
 │   ├── index.html       ← main app (owner / accountant)
 │   ├── staff.html       ← staff expenses & invoices app (passkey-only)
 │   └── _headers         ← security headers
+├── docs/
+│   └── SELF_HOSTING.md  ← run Trove independently of the developer
 └── wrangler.jsonc       ← Cloudflare deploy config (serves ./public)
 ```
 
