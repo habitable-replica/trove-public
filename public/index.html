@@ -990,7 +990,7 @@ textarea{resize:vertical;min-height:60px}
 // Stamped automatically on deploy by scripts/stamp-build.mjs (date · short
 // git SHA). Shown on the login screen, in the topbar, and in Settings so you
 // can confirm at a glance which build is actually live after a deploy.
-const APP_BUILD = '2026-07-02 · 145096f';
+const APP_BUILD = '2026-07-02 · f982bde';
 const BUILD_LABEL = `Build ${APP_BUILD}`;
 // Public source repository — shown on the login screen and in Settings so the code is
 // always one click away (open source is the whole point). Confirm/adjust the URL.
@@ -3242,19 +3242,14 @@ async function publishSignedSummary(delegationCIDs={}){
   if(!pinataJWT){ console.warn('Summary skipped: no Pinata JWT'); return; }
   try{
     const period = new Date().toISOString().slice(0,7);
-    const entries = vault.journal;
-    let totalIncome=0, totalExpenses=0, byCategory={};
-    entries.forEach(je=>{
-      je.lines.forEach(l=>{
-        const acct = vault.accounts.find(a=>a.id===l.acctId);
-        if(acct?.type==='income')  {totalIncome   += l.credit||0;byCategory[acct.name]=(byCategory[acct.name]||0)+(l.credit||0)}
-        if(acct?.type==='expense') {totalExpenses += l.debit||0;byCategory[acct.name]=(byCategory[acct.name]||0)+(l.debit||0)}
-      });
-    });
+    // ⚠️ This summary is pinned to IPFS UNENCRYPTED, so it must carry NO financial data.
+    // Its only public job is ECDH-public-key discovery (so members can delegate to each
+    // other) plus signature verification. Financial totals, category breakdown and entry
+    // count were REMOVED — publishing them here leaked exactly the data the vault encrypts
+    // (see docs/METADATA_MINIMIZATION_SPEC.md #1). DO NOT re-add money/count fields; if
+    // cross-member financial visibility is needed, envelope-encrypt it to members instead.
     const summary = {
       address:walletAddr, orgId:vault.orgId, period,
-      totalIncome, totalExpenses, netIncome:totalIncome-totalExpenses,
-      byCategory, entryCount:entries.length,
       nickname: vault.nickname||'Member',
       ecdhPublicKey: vault.ecdhPublicKey,
       delegationCIDs,
