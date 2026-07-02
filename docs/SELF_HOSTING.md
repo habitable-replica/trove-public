@@ -14,7 +14,7 @@ Trove is three separable things. Independence has to be evaluated per layer:
 
 | Layer | What it is | Dependency today | Self-host path |
 |---|---|---|---|
-| **App** | the UI + all crypto | a static file | host it anywhere, or run from disk |
+| **App** | the UI + all crypto | a static folder | host it anywhere, or run from disk |
 | **Identity** | who you are / your key | none — client-side | MetaMask or passkey; nothing server-side |
 | **Storage** | the encrypted vault | a pinning service (Pinata) | your own IPFS node or another pinning service |
 
@@ -26,18 +26,33 @@ addressed below.
 
 ## 1. The app — fully independent
 
-`public/index.html` is a single, self-contained HTML file: all logic and cryptography run
-in the browser, with **no backend and no build step**. The host (e.g. Cloudflare) is just a
-static file host — **not** a dependency, only a convenience. You can serve the file from:
+`public/index.html` is a self-contained HTML app: all logic and cryptography run in the
+browser, with **no backend and no build step**. The host (e.g. Cloudflare) is just a static
+file host — **not** a dependency, only a convenience. You can serve `public/` from:
 
 - any static host (Netlify, GitHub Pages, S3, nginx, …),
-- IPFS itself (pin the HTML; open it by CID through any gateway),
-- or **a local file** — open `index.html` directly. (Passkeys/WebAuthn need a secure
-  context, i.e. `https://` or `localhost`; MetaMask works from `file://`.)
+- IPFS itself (pin it; open by CID through any gateway),
+- or **locally** — serve the `public/` folder (Passkeys/WebAuthn need `https://` or
+  `localhost`; MetaMask also works from `file://`).
 
-**Verify what you run matches the source.** Because it's one file, you can hash it and
-compare against this repo, or serve it from IPFS so the CID *is* the integrity check. No
-trust in anyone's servers is required to know you're running the real code.
+**Third-party libraries (and offline).** The app uses four JS libraries:
+
+- **elliptic** (secp256k1 ECDH — crypto) is **self-hosted** from `public/vendor/` — no
+  third party sits in the crypto path.
+- **snarkjs**, **xlsx**, **papaparse** load from a CDN (jsDelivr) with **Subresource
+  Integrity** (the browser rejects a tampered file) plus a **local fallback** in
+  `public/vendor/` that loads automatically if the CDN is unreachable, removed, or fails SRI.
+- **Google Fonts** is cosmetic and falls back to the system font if unreachable.
+
+So Trove runs **fully offline / with no external requests** when you serve the whole
+`public/` folder — the CDN fetches fail and the vendored copies take over — while a normal
+hosted deploy still uses the CDN for those three libs to offload bandwidth. Provenance and
+integrity hashes for every vendored file are in
+[`public/vendor/README.md`](../public/vendor/README.md).
+
+**Verify what you run matches the source.** Hash `index.html` against this repo, hash the
+`vendor/` files against `public/vendor/README.md`, or serve from IPFS so the CID *is* the
+integrity check — no trust in anyone's servers required.
 
 ### Deploy your own instance
 ```bash
@@ -101,7 +116,7 @@ the account is never a single point of failure.
 
 Recovery needs three legs, and all three can be held by you:
 
-1. **The code** — open source (this repo); a single offline HTML file.
+1. **The code** — open source (this repo); a static folder that runs fully offline.
 2. **The encrypted vault** — wherever *you* pinned it + your local backups.
 3. **The key** — your wallet/passkey, plus recovery shares held by your org.
 
