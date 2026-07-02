@@ -668,6 +668,27 @@ textarea{resize:vertical;min-height:60px}
 }
 @media(max-width:600px){
   .summary-grid,.zk-stats{grid-template-columns:1fr}
+  /* Topbar: wrap to two rows — tabs get their own full-width scrollable row */
+  .topbar{height:auto;min-height:52px;flex-wrap:wrap;padding:.5rem .75rem;row-gap:.35rem}
+  .top-org,.build-tag{display:none}
+  .nav-tabs{order:10;flex-basis:100%;min-width:0}
+  /* Touch targets (~44px guideline) */
+  .nav-tab{padding:.55rem .9rem;font-size:.82rem}
+  .lock-btn{padding:.5rem .7rem;font-size:.78rem}
+  .btn-sm{padding:.5rem .85rem}
+  /* 16px inputs stop iOS auto-zoom on focus… */
+  input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{font-size:16px}
+  /* …but keep the tight line-item grids and the big amount field at their designed sizes
+     (equal specificity — these later rules re-assert them) */
+  .je-line-row select,.je-line-row input{font-size:.78rem}
+  .inv-item-row input{font-size:.78rem}
+  .inv-tot-row input{font-size:.76rem}
+  .inv-field input,.inv-field select,.inv-field textarea{font-size:16px}
+  .cr-amount{font-size:1.8rem}
+  /* Modal + toast fit the screen */
+  #modal-bg{padding:.75rem .5rem}
+  .modal{padding:1.1rem}
+  #toast{left:1rem;right:1rem;max-width:none}
 }
 @media(max-width:430px){
   .inv-item-head,.inv-item-row{grid-template-columns:1fr 40px 60px 56px 18px;gap:.3rem}
@@ -676,10 +697,17 @@ textarea{resize:vertical;min-height:60px}
   .inv-paper-foot{padding:.85rem 1.25rem}
 }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/elliptic/6.5.4/elliptic.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.3/build/snarkjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<!-- Third-party libraries. See public/vendor/README.md for provenance + integrity hashes. -->
+<!-- elliptic (secp256k1 ECDH — crypto): SELF-HOSTED so no third party sits in the crypto path. -->
+<script src="vendor/elliptic-6.5.4.min.js"></script>
+<!-- snarkjs / xlsx / papaparse: CDN-primary with SRI (a tampered file is rejected by the browser),
+     plus a local fallback that loads if the CDN is unreachable/removed OR blocked by SRI. -->
+<script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.3/build/snarkjs.min.js" integrity="sha384-HLrBpnE0aMqTKCyu06aW2jOHQ9l7ie7Yr4H8RguQHHFDThjEGIlfcVLN+Vd9D4ag" crossorigin="anonymous"></script>
+<script>window.snarkjs||document.write('<script src="vendor/snarkjs-0.7.3.min.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<script>window.XLSX||document.write('<script src="vendor/xlsx-0.18.5.full.min.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous"></script>
+<script>window.Papa||document.write('<script src="vendor/papaparse-5.4.1.min.js"><\/script>')</script>
 </head>
 <body>
 
@@ -962,7 +990,7 @@ textarea{resize:vertical;min-height:60px}
 // Stamped automatically on deploy by scripts/stamp-build.mjs (date · short
 // git SHA). Shown on the login screen, in the topbar, and in Settings so you
 // can confirm at a glance which build is actually live after a deploy.
-const APP_BUILD = '2026-07-01 · 09db190';
+const APP_BUILD = '2026-07-02 · 145096f';
 const BUILD_LABEL = `Build ${APP_BUILD}`;
 // Public source repository — shown on the login screen and in Settings so the code is
 // always one click away (open source is the whole point). Confirm/adjust the URL.
